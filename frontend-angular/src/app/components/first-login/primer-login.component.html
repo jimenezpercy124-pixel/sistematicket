@@ -1,0 +1,53 @@
+<div class="first-login-container">
+  <div class="form-card animate-in">
+    <div class="logo-header">
+      <img src="assets/img/logo-siit.png" alt="SIIT SUNAFIL" class="main-logo">
+      <h1>Seguridad de Cuenta</h1>
+      <p>Por tu privacidad, debes cambiar la contraseña predeterminada antes de continuar.</p>
+    </div>
+
+    <form [formGroup]="formularioPassword" (ngSubmit)="enviarFormulario()">
+      
+      <div class="input-group">
+        <label>Nueva Contraseña</label>
+        <div class="password-wrapper">
+          <input 
+            [type]="mostrarPassword1 ? 'text' : 'password'" 
+            formControlName="nuevo_password" 
+            placeholder="Mínimo 8 caracteres"
+            [class.invalid]="formularioPassword.get('nuevo_password')?.touched && formularioPassword.get('nuevo_password')?.invalid"
+          >
+          <button type="button" class="eye-btn" (click)="alternarVisibilidad(1)">
+            <i class="bi" [ngClass]="mostrarPassword1 ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
+          </button>
+        </div>
+        <div class="error-msg" *ngIf="formularioPassword.get('nuevo_password')?.touched && formularioPassword.get('nuevo_password')?.errors?.['minlength']">
+           Debe tener al menos 8 caracteres.
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Confirmar Contraseña</label>
+        <div class="password-wrapper">
+          <input 
+            [type]="mostrarPassword2 ? 'text' : 'password'" 
+            formControlName="confirmar_password" 
+            placeholder="Repita su nueva contraseña"
+            [class.invalid]="formularioPassword.hasError('desigual') && formularioPassword.get('confirmar_password')?.touched"
+          >
+          <button type="button" class="eye-btn" (click)="alternarVisibilidad(2)">
+            <i class="bi" [ngClass]="mostrarPassword2 ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
+          </button>
+        </div>
+        <div class="error-msg" *ngIf="formularioPassword.hasError('desigual') && formularioPassword.get('confirmar_password')?.touched">
+          Las contraseñas no coinciden.
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" [disabled]="formularioPassword.invalid || estaCargando">
+        <span *ngIf="!estaCargando">Actualizar y Entrar</span>
+        <span *ngIf="estaCargando" class="spinner"></span>
+      </button>
+    </form>
+  </div>
+</div>

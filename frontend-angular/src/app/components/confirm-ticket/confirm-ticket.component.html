@@ -1,0 +1,62 @@
+<div class="confirm-wrapper">
+  <div class="confirm-card">
+    <div class="confirm-header">
+      <i class="bi bi-ticket-perforated-fill"></i>
+      <h3>SIIT-SUNAFIL</h3>
+      <p>Confirmación de Resolución</p>
+    </div>
+
+    <div class="confirm-body">
+      
+      <!-- LOADING -->
+      <div *ngIf="status === 'loading'" class="state-view">
+        <div class="spinner"></div>
+        <p>Procesando solicitud...</p>
+      </div>
+
+      <!-- SUCCESS -->
+      <div *ngIf="status === 'success'" class="state-view success">
+        <i class="bi bi-check-circle-fill"></i>
+        <h4>Ticket Confirmado</h4>
+        <div class="msg-box">{{ message }}</div>
+        <p class="hint">Gracias por su colaboración. Ya puede cerrar esta ventana.</p>
+      </div>
+
+      <!-- ERROR -->
+      <div *ngIf="status === 'error'" class="state-view error">
+        <i class="bi bi-x-circle-fill"></i>
+        <h4>Error</h4>
+        <div class="msg-box">{{ message }}</div>
+      </div>
+
+      <!-- INFO / PROCESADO -->
+      <div *ngIf="status === 'info'" class="state-view info">
+        <i class="bi bi-info-circle-fill"></i>
+        <h4>Información</h4>
+        <div class="msg-box">{{ message }}</div>
+      </div>
+
+      <!-- REJECT FORM -->
+      <div *ngIf="status === 'reject_form'" class="state-view reject">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <h4>Rechazar Resolución</h4>
+        <p class="sub">El ticket volverá al especialista para su revisión.</p>
+
+        <div class="reject-form">
+          <div class="form-group">
+            <label>¿Por qué rechaza la resolución?</label>
+            <textarea [(ngModel)]="motivoRechazo" class="modern-input" rows="3" placeholder="Detalle el motivo..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Evidencia (Opcional)</label>
+            <input type="file" (change)="onFileChange($event)" class="file-input">
+          </div>
+          <button (click)="enviarRechazo()" [disabled]="!motivoRechazo" class="btn-primary">
+            ENVIAR RESPUESTA
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

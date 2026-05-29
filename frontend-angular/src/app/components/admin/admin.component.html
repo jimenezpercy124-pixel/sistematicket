@@ -1,0 +1,971 @@
+<div class="admin-wrapper" [class.sidebar-active]="sidebarActive">
+
+  <!-- Burger Menu (Mobile) -->
+  <button class="menu-toggle" (click)="sidebarActive = !sidebarActive">
+    <i class="bi" [class.bi-list]="!sidebarActive" [class.bi-x-lg]="sidebarActive"></i>
+  </button>
+
+  <!-- Overlay (Mobile) -->
+  <div class="sidebar-overlay" (click)="sidebarActive = false"></div>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="assets/img/logo-lupa.png" alt="SIIT" class="logo-img-sidebar">
+      <div class="logo-text">
+        <span class="brand">SIIT SUNAFIL <img src="assets/img/logo-lupa.png" class="lupa-icon-small"></span>
+        <span class="sub">Sistema de Tickets</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <span class="nav-label">Módulos</span>
+      <button [class.active]="activeTab === 'tickets'" (click)="activeTab = 'tickets'">
+        <i class="bi bi-ticket-perforated-fill"></i> Tickets Globales
+      </button>
+      <button [class.active]="activeTab === 'usuarios'" (click)="activeTab = 'usuarios'">
+        <i class="bi bi-people-fill"></i> Gestión de Personal
+      </button>
+      <button [class.active]="activeTab === 'catalogos'" (click)="activeTab = 'catalogos'">
+        <i class="bi bi-folder2-open"></i> Incidencias / Requerimientos
+      </button>
+      <button [class.active]="activeTab === 'contingencia'" (click)="activeTab = 'contingencia'">
+        <i class="bi bi-shield-fill-exclamation text-warning"></i> Módulo Contingencia
+      </button>
+      <span class="nav-label" style="margin-top:0.5rem">Analítica</span>
+      <button [class.active]="activeTab === 'reportes'" (click)="activeTab = 'reportes'">
+        <i class="bi bi-graph-up-arrow"></i> Informes
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">{{username.charAt(0).toUpperCase()}}</div>
+        <div class="user-details">
+          <span class="name">{{username}}</span>
+          <span class="role">{{rol}}</span>
+        </div>
+        <button class="btn-logout" title="Cerrar Sesión" (click)="logout()">
+          <i class="bi bi-box-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+
+
+    <!-- Hero Banner -->
+    <div class="hero-banner">
+      <div class="hero-content">
+        <div class="hero-text">
+          <h1>Panel de <span class="highlight">Administración</span></h1>
+          <p>Sistema de Tickets - SIIT - SUNAFIL</p>
+        </div>
+        <div class="hero-actions" *ngIf="activeTab === 'tickets'">
+          <button class="btn-ghost" (click)="activeTab = 'reportes'">
+            <i class="bi bi-bar-chart-line"></i> Ver Reportes
+          </button>
+          <button class="btn-primary" (click)="exportToPDF()">
+            <i class="bi bi-file-earmark-pdf-fill"></i> Exportar PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Body -->
+    <div class="content-body">
+
+      <!-- Stats Row -->
+      <div class="stats-grid">
+        <div class="stat-card total fade-up">
+          <div class="stat-icon-wrap"><i class="bi bi-collection-fill"></i></div>
+          <div class="stat-info">
+            <span class="val">{{statsCalculadas.total}}</span>
+            <span class="lbl">Total Tickets</span>
+          </div>
+        </div>
+        <div class="stat-card pending fade-up">
+          <div class="stat-icon-wrap"><i class="bi bi-hourglass-split"></i></div>
+          <div class="stat-info">
+            <span class="val">{{statsCalculadas.pendientes}}</span>
+            <span class="lbl">Pendientes</span>
+          </div>
+        </div>
+        <div class="stat-card process fade-up">
+          <div class="stat-icon-wrap"><i class="bi bi-lightning-charge-fill"></i></div>
+          <div class="stat-info">
+            <span class="val">{{statsCalculadas.en_proceso}}</span>
+            <span class="lbl">En Proceso</span>
+          </div>
+        </div>
+        <div class="stat-card resolved fade-up">
+          <div class="stat-icon-wrap"><i class="bi bi-check-circle-fill"></i></div>
+          <div class="stat-info">
+            <span class="val">{{statsCalculadas.resueltos}}</span>
+            <span class="lbl">Resueltos</span>
+          </div>
+        </div>
+        <div class="stat-card rejected fade-up">
+          <div class="stat-icon-wrap"><i class="bi bi-x-circle-fill"></i></div>
+          <div class="stat-info">
+            <span class="val">{{statsCalculadas.rechazados}}</span>
+            <span class="lbl">Rechazados</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TAB: TICKETS ===== -->
+      <div *ngIf="activeTab === 'tickets'" class="fade-up">
+        <div class="glass-card">
+          <div class="card-header">
+            <h2><i class="bi bi-ticket-perforated-fill"></i> Listado de Tickets</h2>
+            <div class="search-container">
+              <select [(ngModel)]="filtroEstado" class="filter-select-admin">
+                <option value="">Todos los Estados</option>
+                <option value="PENDIENTE">⏳ PENDIENTE</option>
+                <option value="EN_PROCESO">⚙️ EN PROCESO</option>
+                <option value="PENDIENTE_CONFIRMACION">🔍 POR CONFIRMAR</option>
+                <option value="RESUELTO">✅ RESUELTO</option>
+                <option value="RECHAZADO">❌ RECHAZADO</option>
+              </select>
+              <div class="search-box">
+                <i class="bi bi-search"></i>
+                <input type="text" [(ngModel)]="searchTerm" placeholder="Buscar por N°, Incidencia o IRE...">
+              </div>
+              <span class="record-count">{{filteredTickets.length}} registros encontrados</span>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th class="notranslate" translate="no">N° TICKET</th>
+                  <th>INCIDENCIA</th>
+                  <th>USUARIO CREADOR</th>
+                  <th>IRE</th>
+                  <th>FECHA / HORA</th>
+                  <th>ESTADO</th>
+                  <th>ESPECIALISTA</th>
+                  <th>TIEMPO RESOL.</th>
+                  <th>ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let t of filteredTickets | slice:(pageTickets-1)*itemsPerPage:pageTickets*itemsPerPage" 
+                    class="fade-in ticket-row-admin" 
+                    (click)="verDetalleTicket(t)" 
+                    style="cursor:pointer;"
+                    title="Click para ver detalles y auditoría">
+                  <td class="id-cell notranslate" translate="no" data-label="ID TICKET">{{t.id_ticket}}</td>
+                  <td class="text-main" data-label="INCIDENCIA">{{t.nombreIncidencia || t.asunto || '—'}}</td>
+                  <td data-label="USUARIO CREADOR">{{t.creador?.username || '—'}}</td>
+                  <td data-label="IRE">{{t.cod_ire || '—'}}</td>
+                  <td data-label="FECHA">{{(t.fecha_creacion || t.fechaCreacion) | date:'dd/MM/yy, h:mm a'}}</td>
+                  <td data-label="ESTADO">
+                    <span class="badge {{t.estado}}">
+                      {{ t.estado === 'PENDIENTE_CONFIRMACION' ? 'POR CONFIRMAR' : t.estado }}
+                    </span>
+                  </td>
+                  <td data-label="ESPECIALISTA">{{t.nombreEspecialista || '—'}}</td>
+                  <td data-label="SLA">
+                    <span class="sla-time notranslate" translate="no" [title]="'Calculado en horario laboral 8:30-17:30'">
+                      {{ getTiempoResolucion(t) }}
+                    </span>
+                  </td>
+                  <td class="actions-cell" data-label="ACCIONES">
+                    <button class="btn-danger-icon" (click)="eliminarTicket(t.id_ticket); $event.stopPropagation()">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="filteredTickets.length === 0">
+                  <td colspan="6">
+                    <div class="empty-state">
+                      <i class="bi bi-inbox"></i>
+                      <p>No hay tickets registrados aún</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Paginación de Tickets -->
+          <div class="pagination-container" *ngIf="filteredTickets.length > itemsPerPage" style="padding: 1rem; border-top: 1px solid #1e293b;">
+            <button class="btn-page" [disabled]="pageTickets === 1" (click)="prevPage('tickets')"><i class="bi bi-chevron-left"></i></button>
+            <span class="page-info" style="color: #94a3b8;">Página {{ pageTickets }} de {{ totalPages('tickets') }}</span>
+            <button class="btn-page" [disabled]="pageTickets === totalPages('tickets')" (click)="nextPage('tickets')"><i class="bi bi-chevron-right"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TAB: USUARIOS ===== -->
+      <div *ngIf="activeTab === 'usuarios'" class="fade-up">
+        <div class="two-col">
+
+          <!-- Formulario de registro -->
+          <div class="glass-card">
+            <div class="card-header">
+              <h2><i class="bi bi-person-plus-fill"></i> Registrar Personal</h2>
+            </div>
+            <div class="card-body">
+              <form [formGroup]="userForm" (ngSubmit)="crearUsuario()">
+
+                <div class="field-group">
+                  <label>Nombre de Usuario</label>
+                  <input type="text" formControlName="username" placeholder="Ej: jperez">
+                </div>
+
+                <div class="field-group">
+                  <label>Correo Institucional</label>
+                  <input type="email" formControlName="email" placeholder="correo@sunafil.gob.pe">
+                </div>
+
+                <div class="form-row-2">
+                  <div class="field-group">
+                    <label>Rol del Sistema</label>
+                    <select formControlName="rol">
+                      <option value="ADMIN">Administrador</option>
+                      <option value="ESPECIALISTA">Especialista</option>
+                      <option value="INSPECTOR">Inspector</option>
+                      <option value="SUPERVISOR">Supervisor</option>
+                      <option value="SIFS">SIFS</option>
+                      <option value="SIFN">SIFN</option>
+                      <option value="SISA">SISA</option>
+                      <option value="ESPECIALISTA_SIFS">Especialista SIFS</option>
+                      <option value="ESPECIALISTA_SIFN">Especialista SIFN</option>
+                      <option value="ESPECIALISTA_SISA">Especialista SISA</option>
+                    </select>
+                  </div>
+                  <div class="field-group" *ngIf="userForm.get('rol')?.value !== 'ADMIN' && userForm.get('rol')?.value !== 'ESPECIALISTA'">
+                    <label>IRE / Intendencia</label>
+                    <select formControlName="cod_ire">
+                      <option value="">— Sin asignar —</option>
+                      <option *ngFor="let ire of intendencias" [value]="ire.cod_ire || ire.codIre">{{ire.nombre_ire || ire.nombreIre}}</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Campo exclusivo para Especialista -->
+                <div class="field-group" *ngIf="userForm.get('rol')?.value === 'ESPECIALISTA'">
+                  <label>Tipo de Especialista</label>
+                  <div class="tipo-selector">
+                    <div class="tipo-option" 
+                         [class.selected]="userForm.get('tipo_especialista')?.value === 'PRINCIPAL'"
+                         (click)="userForm.get('tipo_especialista')?.setValue('PRINCIPAL')">
+                      <div class="tipo-icon">⭐</div>
+                      <div class="tipo-name">PRINCIPAL</div>
+                      <div class="tipo-desc">Responsable primario</div>
+                    </div>
+                    <div class="tipo-option"
+                         [class.selected]="userForm.get('tipo_especialista')?.value === 'SECUNDARIO'"
+                         (click)="userForm.get('tipo_especialista')?.setValue('SECUNDARIO')">
+                      <div class="tipo-icon">👤</div>
+                      <div class="tipo-name">SECUNDARIO</div>
+                      <div class="tipo-desc">Soporte adicional</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <label>Contraseña Temporal (Opcional)</label>
+                  <input type="text" formControlName="password" placeholder="Dejar vacío = Sunafil2026!">
+                </div>
+
+                <button type="submit" class="btn-primary" [disabled]="userForm.invalid" style="width:100%; justify-content:center;">
+                  <i class="bi bi-person-check-fill"></i> Registrar Personal
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Tabla de usuarios -->
+          <div class="glass-card table-users-card">
+            <div class="card-header" style="flex-wrap: wrap; gap: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <h2><i class="bi bi-people-fill text-danger"></i> Personal Activo</h2>
+                <span class="badge-pill bg-black" style="font-size:0.65rem;">{{usuarios.length}} usuarios</span>
+              </div>
+              <div style="display: flex; gap: 10px; align-items: center; margin-left: auto;">
+                <div class="search-box">
+                  <i class="bi bi-search"></i>
+                  <input type="text" [(ngModel)]="filtroUsuario" placeholder="Buscar por usuario, correo, rol...">
+                </div>
+                <button class="btn-page" (click)="cargarUsuarios()" title="Actualizar">
+                  <i class="bi bi-arrow-clockwise"></i>
+                </button>
+              </div>
+            </div>
+            <div class="card-body px-0 py-0" style="overflow-x: hidden;">
+              <div class="table-responsive">
+                <table class="data-table user-table">
+                  <thead>
+                    <tr>
+                      <th width="30%">USUARIO / CORREO</th>
+                      <th width="15%" style="text-align: center;">ROL</th>
+                      <th width="20%" style="text-align: center;">INTENDENCIA</th>
+                      <th width="12%" style="text-align: center;">TIPO ESP.</th>
+                      <th width="10%" style="text-align: center;">ESTADO</th>
+                      <th width="13%" style="text-align: center;">ACCIONES</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let u of paginatedUsuarios" class="user-row-admin" [class.user-inactive]="u.activo === false">
+                      <td data-label="USUARIO/EMAIL">
+                        <div class="user-name">
+                          {{u.username}}
+                        </div>
+                        <div class="user-email">{{u.email}}</div>
+                      </td>
+                      <td style="text-align: center;" data-label="ROL">
+                        <span class="badge-pill" 
+                              [ngClass]="{
+                                'bg-black': (u.role?.nombre_rol || u.role?.nombreRol) === 'ADMIN', 
+                                'bg-red': (u.role?.nombre_rol || u.role?.nombreRol) === 'ESPECIALISTA', 
+                                'bg-blue': (u.role?.nombre_rol || u.role?.nombreRol) !== 'ESPECIALISTA' && (u.role?.nombre_rol || u.role?.nombreRol) !== 'ADMIN'
+                              }">
+                          {{u.role?.nombre_rol || u.role?.nombreRol}}
+                        </span>
+                      </td>
+                      <td style="text-align: center; color:#94a3b8; font-size:0.85rem;" data-label="IRE">
+                        {{u.cod_ire || u.codIre || '—'}}
+                      </td>
+                      <td style="text-align: center;" data-label="TIPO ESP.">
+                        <span *ngIf="u.especialista_num === 1 || u.especialistaNum === 1" class="badge-pill bg-yellow">
+                          <i class="bi bi-star-fill"></i> Principal
+                        </span>
+                        <span *ngIf="u.especialista_num === 2 || u.especialistaNum === 2" class="badge-pill" style="background:#64748b;">
+                          Secundario
+                        </span>
+                        <span *ngIf="!u.especialista_num && !u.especialistaNum" style="color:#94a3b8;">—</span>
+                      </td>
+                      <td style="text-align: center;" data-label="ESTADO">
+                        <span class="badge-pill" [ngClass]="u.activo !== false ? 'bg-green' : 'bg-red'">
+                          {{ u.activo !== false ? 'ACTIVO' : 'INACTIVO' }}
+                        </span>
+                      </td>
+                      <td style="text-align: center; white-space: nowrap;" class="actions-cell" data-label="ACCIONES">
+                        <button class="action-btn" [ngClass]="u.activo !== false ? 'text-success' : 'text-danger'" (click)="toggleUsuarioActivo(u)" [title]="u.activo !== false ? 'Inhabilitar Usuario' : 'Habilitar Usuario'" style="background:transparent; border:none; cursor:pointer; padding:0 5px;">
+                          <i class="bi" [ngClass]="u.activo !== false ? 'bi-toggle-on' : 'bi-toggle-off'" style="font-size: 1.3rem;"></i>
+                        </button>
+                        <button class="action-btn text-muted" (click)="resetPassword(u)" title="Resetear Contraseña" style="background:transparent; border:none; cursor:pointer; padding:0 5px;">
+                          <i class="bi bi-key" style="font-size: 1.2rem;"></i>
+                        </button>
+                        <button class="action-btn text-danger" (click)="eliminarUsuario(u.id_usuario || u.idUsuario)" title="Eliminar Usuario" style="background:transparent; border:none; cursor:pointer; padding:0 5px;">
+                          <i class="bi bi-trash3" style="font-size: 1.1rem;"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    <tr *ngIf="filteredUsuarios.length === 0">
+                      <td colspan="6" class="text-center py-4 text-muted">
+                        No se encontraron usuarios
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Paginación de Usuarios -->
+              <div class="pagination-container" *ngIf="filteredUsuarios.length > itemsPerPage" style="padding: 1rem; border-top: 1px solid #e2e8f0;">
+                <button class="btn-page" [disabled]="pageUsuarios === 1" (click)="prevPage('usuarios')"><i class="bi bi-chevron-left"></i></button>
+                <span class="page-info">Página {{ pageUsuarios }} de {{ totalPages('usuarios') }}</span>
+                <button class="btn-page" [disabled]="pageUsuarios === totalPages('usuarios')" (click)="nextPage('usuarios')"><i class="bi bi-chevron-right"></i></button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TAB: CATÁLOGOS ===== -->
+      <div *ngIf="activeTab === 'catalogos'" class="fade-up">
+        <div class="two-column-grid">
+          <!-- Columna Izquierda: Formulario -->
+          <div class="glass-card">
+            <div class="card-header">
+              <h2><i class="bi bi-plus-circle-fill" style="color: var(--primary-red);"></i> Nueva Incidencia / Requerimiento</h2>
+            </div>
+            <div class="card-body">
+              <form [formGroup]="incidenciaForm" (ngSubmit)="crearIncidencia()" class="modern-form">
+                <div class="field-group">
+                  <label>NOMBRE DE LA INCIDENCIA</label>
+                  <input type="text" formControlName="nombre_incidencia" placeholder="Ej: Corrección de Expediente" class="modern-input">
+                </div>
+                
+                <div class="field-group">
+                  <label>ASIGNAR A ESPECIALISTA</label>
+                  <select formControlName="id_especialista" class="modern-input custom-select" [class.is-invalid]="incidenciaForm.get('id_especialista')?.invalid && incidenciaForm.get('id_especialista')?.touched">
+                    <option [ngValue]="null" disabled selected>-- Seleccione un especialista --</option>
+                    <option *ngFor="let esp of especialistasList" [value]="esp.id_usuario || esp.idUsuario">
+                      {{ (esp.especialista_num === 1 || esp.especialistaNum === 1) ? '⭐ ' : '' }}{{ esp.username }} &mdash; {{ (esp.especialista_num === 1 || esp.especialistaNum === 1) ? 'Lider Principal' : 'Secundario' }}
+                    </option>
+                  </select>
+                  <small class="catalog-hint">
+                    <i class="bi bi-info-circle"></i> Solo se muestran los especialistas registrados en el sistema.
+                  </small>
+                </div>
+
+                <!-- Preview del especialista seleccionado -->
+                <div class="esp-preview" *ngIf="incidenciaForm.get('id_especialista')?.value">
+                  <ng-container *ngFor="let esp of especialistasList">
+                    <div *ngIf="(esp.id_usuario || esp.idUsuario) == incidenciaForm.get('id_especialista')?.value" class="esp-preview-card">
+                      <div class="esp-avatar">{{ esp.username?.charAt(0)?.toUpperCase() }}</div>
+                      <div class="esp-info">
+                        <span class="esp-name">{{ esp.username }}</span>
+                        <span class="esp-role" [class.is-principal]="esp.especialista_num === 1 || esp.especialistaNum === 1">
+                          <i class="bi {{ (esp.especialista_num === 1 || esp.especialistaNum === 1) ? 'bi-star-fill' : 'bi-person-fill' }}"></i>
+                          {{ (esp.especialista_num === 1 || esp.especialistaNum === 1) ? 'Lider Principal' : 'Especialista Secundario' }}
+                        </span>
+                      </div>
+                    </div>
+                  </ng-container>
+                </div>
+
+                <button type="submit" class="btn-submit-catalog" [disabled]="incidenciaForm.invalid">
+                  <i class="bi bi-plus-lg"></i> AGREGAR INCIDENCIA
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Columna Derecha: Tabla -->
+          <div class="glass-card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <h2><i class="bi bi-list-ul" style="color: var(--primary-red);"></i> Listado de Incidencias / Requerimientos</h2>
+              <button class="btn-refresh" (click)="cargarIncidencias()"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="data-table catalog-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 5%;">Nº</th>
+                      <th style="width: 50%;">INCIDENCIA / REQUERIMIENTO</th>
+                      <th style="width: 35%;">ESPECIALISTA ASIGNADO</th>
+                      <th style="width: 10%;">ACCIÓN</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let inc of paginatedIncidencias; let i = index">
+                      <td class="catalog-num">{{ (pageIncidencias - 1) * itemsPerPage + i + 1 }}</td>
+                      <td class="catalog-name">{{ inc.nombreIncidencia }}</td>
+                      <td>
+                        <div class="esp-badge-row" *ngIf="inc.nombreEspecialista !== '—'; else sinAsignar">
+                          <div class="esp-avatar-sm">{{ inc.nombreEspecialista?.charAt(0)?.toUpperCase() }}</div>
+                          <div class="esp-badge-info">
+                            <span class="esp-badge-name">{{ inc.nombreEspecialista }}</span>
+                            <span class="esp-badge-type" [class.principal]="inc.tipoEspecialista === 'PRINCIPAL'">
+                              <i class="bi {{ inc.tipoEspecialista === 'PRINCIPAL' ? 'bi-star-fill' : 'bi-person' }}"></i>
+                              {{ inc.tipoEspecialista === 'PRINCIPAL' ? 'Lider' : 'Secundario' }}
+                            </span>
+                          </div>
+                        </div>
+                        <ng-template #sinAsignar>
+                          <span class="sin-asignar"><i class="bi bi-dash-circle"></i> Sin asignar</span>
+                        </ng-template>
+                      </td>
+                      <td>
+                        <div style="display: flex; gap: 0.25rem;">
+                          <button class="btn-primary-icon" (click)="abrirModalReasignacion(inc)" title="Reasignar Especialista" style="background:transparent; border:none; color:#38bdf8; cursor:pointer; padding:0.5rem; border-radius:4px; transition:all 0.2s;">
+                            <i class="bi bi-person-fill-gear" style="font-size: 1.1rem;"></i>
+                          </button>
+                          <button class="btn-danger-icon" (click)="eliminarIncidencia(inc.idIncidencia)" title="Eliminar">
+                            <i class="bi bi-trash3"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr *ngIf="incidencias.length === 0">
+                      <td colspan="4">
+                        <div class="empty-state"><p>No hay incidencias registradas</p></div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Paginación de Incidencias -->
+              <div class="pagination-container" *ngIf="incidencias.length > itemsPerPage" style="padding: 1rem; border-top: 1px solid #e2e8f0;">
+                <button class="btn-page" [disabled]="pageIncidencias === 1" (click)="prevPage('incidencias')"><i class="bi bi-chevron-left"></i></button>
+                <span class="page-info">Página {{ pageIncidencias }} de {{ totalPages('incidencias') }}</span>
+                <button class="btn-page" [disabled]="pageIncidencias === totalPages('incidencias')" (click)="nextPage('incidencias')"><i class="bi bi-chevron-right"></i></button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TAB: CONTINGENCIA ===== -->
+      <div *ngIf="activeTab === 'contingencia'" class="fade-up">
+        <div class="two-column-grid">
+          <!-- Formulario de Activación de Plan de Contingencia -->
+          <div class="glass-card">
+            <div class="card-header">
+              <h2><i class="bi bi-shield-fill-exclamation" style="color: #fbbf24; font-size: 1.2rem;"></i> Plan de Contingencia por Ausencia</h2>
+            </div>
+            <div class="card-body">
+              <div class="contingency-info-banner" style="background: rgba(251, 191, 36, 0.05); border: 1px solid rgba(251, 191, 36, 0.15); padding: 1.25rem; border-radius: 12px; margin-bottom: 1.5rem; display: flex; gap: 12px;">
+                <i class="bi bi-info-circle-fill" style="color: #fbbf24; font-size: 1.3rem; margin-top: 2px;"></i>
+                <div>
+                  <strong style="color: #f8fafc; font-size: 0.95rem; display: block; margin-bottom: 4px;">¿Cómo funciona el módulo?</strong>
+                  <p style="color: #94a3b8; font-size: 0.82rem; margin: 0 0 8px; line-height: 1.4;">Selecciona un especialista ausente (por enfermedad o licencia) y uno activo para reasignación:</p>
+                  <ul style="color: #94a3b8; font-size: 0.82rem; margin: 0; padding-left: 1.2rem; line-height: 1.4;">
+                    <li>Desvía automáticamente todos los <strong>nuevos tickets</strong> creados de estas incidencias hacia el especialista de reemplazo.</li>
+                    <li>Migra toda la carga activa de tickets <strong>vigentes (Pendiente, En Proceso)</strong> al nuevo responsable.</li>
+                    <li>Preserva los tickets <strong>históricos cerrados</strong> por el ausente para mantener la integridad del control institucional.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="modern-form mt-4">
+                <div class="field-group">
+                  <label>1. Seleccionar Especialista Ausente</label>
+                  <select [(ngModel)]="idAusente" class="modern-input custom-select" style="background-color:#161b22; color:white; border-color:rgba(255,255,255,0.12)">
+                    <option [ngValue]="null" disabled selected>-- Seleccione especialista ausente --</option>
+                    <option *ngFor="let esp of especialistasList" [value]="esp.id_usuario || esp.idUsuario">
+                      {{ esp.username }} &mdash; {{ (esp.especialista_num === 1 || esp.especialistaNum === 1) ? 'Principal' : 'Secundario' }}
+                    </option>
+                  </select>
+                </div>
+
+                <div class="field-group">
+                  <label>2. Seleccionar Especialista de Reemplazo</label>
+                  <select [(ngModel)]="idReemplazo" class="modern-input custom-select" [disabled]="!idAusente" style="background-color:#161b22; color:white; border-color:rgba(255,255,255,0.12)">
+                    <option [ngValue]="null" disabled selected>-- Seleccione especialista activo --</option>
+                    <option *ngFor="let esp of especialistasList" [value]="esp.id_usuario || esp.idUsuario" [disabled]="(esp.id_usuario || esp.idUsuario) == idAusente">
+                      {{ esp.username }} &mdash; {{ (esp.especialista_num === 1 || esp.especialistaNum === 1) ? 'Principal' : 'Secundario' }}
+                    </option>
+                  </select>
+                </div>
+
+                <div class="contingency-action-wrap mt-3" *ngIf="idAusente && idReemplazo">
+                  <button (click)="activarContingencia()" class="btn-primary" [disabled]="isContingenciaLoading" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #0d1117;">
+                    <i class="bi" [class.bi-shield-fill-check]="!isContingenciaLoading" [class.bi-hourglass-split]="isContingenciaLoading"></i>
+                    {{ isContingenciaLoading ? 'Procesando Plan...' : 'ACTIVAR PLAN DE CONTINGENCIA' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vista de Carga y Resumen de Impacto -->
+          <div class="glass-card">
+            <div class="card-header">
+              <h2><i class="bi bi-graph-up-arrow" style="color: #38bdf8; font-size: 1.2rem;"></i> Impacto Estimado de Reasignación</h2>
+            </div>
+            <div class="card-body">
+              <div *ngIf="!idAusente" class="empty-state" style="padding: 4rem 1rem;">
+                <i class="bi bi-person-badge" style="font-size: 3rem; color: #4b5563; display: block; margin-bottom: 1rem;"></i>
+                <p style="color: #64748b; font-size: 0.875rem;">Seleccione un especialista ausente para calcular la carga de trabajo a migrar.</p>
+              </div>
+
+              <div *ngIf="idAusente" class="contingency-preview-grid" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <!-- Métrica de Categorías -->
+                <div class="preview-stat-box box-categories" style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.12); padding: 1rem; border-radius: 12px; display: flex; align-items: center; gap: 15px;">
+                  <div class="preview-stat-icon" style="font-size: 1.75rem; color: #38bdf8;"><i class="bi bi-tags-fill"></i></div>
+                  <div class="preview-stat-info" style="display: flex; flex-direction: column;">
+                    <span class="val" style="font-size: 1.5rem; font-weight: 800; color: #f8fafc; line-height: 1;">{{ ausenteIncidenciasCount }}</span>
+                    <span class="lbl" style="font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-top: 4px;">Categorías a Reasignar</span>
+                  </div>
+                </div>
+
+                <!-- Métrica de Tickets Activos -->
+                <div class="preview-stat-box box-active-tickets" style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.12); padding: 1rem; border-radius: 12px; display: flex; align-items: center; gap: 15px;">
+                  <div class="preview-stat-icon" style="font-size: 1.75rem; color: #f87171;"><i class="bi bi-hourglass-split"></i></div>
+                  <div class="preview-stat-info" style="display: flex; flex-direction: column;">
+                    <span class="val" style="font-size: 1.5rem; font-weight: 800; color: #f8fafc; line-height: 1;">{{ ausenteTicketsActivos.length }}</span>
+                    <span class="lbl" style="font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-top: 4px;">Tickets Activos a Migrar</span>
+                  </div>
+                </div>
+
+                <!-- Métrica de Tickets Históricos -->
+                <div class="preview-stat-box box-historical" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.12); padding: 1rem; border-radius: 12px; display: flex; align-items: center; gap: 15px;">
+                  <div class="preview-stat-icon" style="font-size: 1.75rem; color: #34d399;"><i class="bi bi-file-earmark-lock-fill"></i></div>
+                  <div class="preview-stat-info" style="display: flex; flex-direction: column;">
+                    <span class="val" style="font-size: 1.5rem; font-weight: 800; color: #f8fafc; line-height: 1;">{{ ausenteTicketsHistoricos.length }}</span>
+                    <span class="lbl" style="font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-top: 4px;">Tickets Históricos (Intactos)</span>
+                  </div>
+                </div>
+
+                <!-- Listado de Categorías de Incidencia de las que es responsable -->
+                <div class="contingency-categories-list" style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem;">
+                  <h3 class="preview-section-title" style="font-size: 0.85rem; font-weight: 700; color: #e2e8f0; margin: 0 0 10px;">Categorías a ser Transferidas:</h3>
+                  <div class="categories-preview-scroll" style="max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 5px;">
+                    <ng-container *ngFor="let inc of incidencias">
+                      <div *ngIf="(inc.especialista_num || inc.especialistaNum) == idAusente" style="font-size: 0.8rem; color: #94a3b8; padding: 6px 10px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 6px;">
+                        <i class="bi bi-chevron-right" style="color: #fbbf24; margin-right: 4px;"></i> {{ inc.nombreIncidencia }}
+                      </div>
+                    </ng-container>
+                    <div *ngIf="ausenteIncidenciasCount === 0" style="font-size: 0.8rem; color: #64748b; font-style: italic;">
+                      El especialista seleccionado no tiene categorías asignadas como responsable principal.
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Garantía de Histórico -->
+                <div class="contingency-security-banner" style="background: rgba(16, 185, 129, 0.03); border: 1px solid rgba(16, 185, 129, 0.1); padding: 10px 15px; border-radius: 8px; display: flex; align-items: center; gap: 10px; margin-top: 0.5rem;">
+                  <i class="bi bi-shield-check" style="color: #34d399; font-size: 1.2rem;"></i>
+                  <p style="color: #94a3b8; font-size: 0.78rem; margin: 0; line-height: 1.4;">Los tickets cerrados por el técnico ausente no se modificarán y conservarán su histórico de auditoría.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TAB: REPORTES ===== -->
+      <div *ngIf="activeTab === 'reportes'" class="fade-up reportes-container">
+        
+        <!-- Header Reportes -->
+        <div class="reportes-header">
+          <h2><i class="bi bi-bar-chart-fill text-danger"></i> Reportes del Sistema</h2>
+          <div class="reportes-actions">
+            <button class="btn-primary btn-red" (click)="cargarReportes()">
+              <i class="bi bi-arrow-clockwise"></i> Actualizar
+            </button>
+            <button class="btn-ghost btn-outline-red" (click)="exportToPDF()">
+              <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
+            </button>
+          </div>
+        </div>
+
+        <!-- Dashboard de Gráficos Estadísticos Premium -->
+        <div class="charts-dashboard-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+          
+          <!-- Card Donut Chart -->
+          <div class="glass-card chart-card">
+            <div class="card-header" style="border-bottom: 1px solid rgba(0,0,0,0.06); padding: 1rem 1.25rem;">
+              <h2 style="font-size: 0.95rem; font-weight:700; color: #1e293b;"><i class="bi bi-pie-chart-fill" style="color: #ef4444; margin-right: 8px;"></i> Distribución de Estados</h2>
+            </div>
+            <div class="card-body donut-chart-body" style="padding: 1.25rem;">
+              <div class="donut-chart-wrapper" style="display: flex; align-items: center; justify-content: space-around; gap: 1.5rem; flex-wrap: wrap;">
+                <svg viewBox="0 0 200 200" class="donut-chart-svg" style="width: 140px; height: 140px;">
+                  <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(0,0,0,0.03)" stroke-width="18" />
+                  <circle *ngFor="let slice of donutSlices" 
+                          cx="100" cy="100" r="70" 
+                          fill="none" 
+                          [attr.stroke]="slice.color" 
+                          stroke-width="18" 
+                          [attr.stroke-dasharray]="slice.dashArray" 
+                          [attr.stroke-dashoffset]="slice.dashOffset" 
+                          transform="rotate(-90 100 100)"
+                          style="transition: all 0.3s ease; cursor: pointer;"
+                          (mouseenter)="hoveredSlice = slice"
+                          (mouseleave)="hoveredSlice = null" />
+                  <text x="100" y="105" text-anchor="middle" style="font-size: 1.8rem; font-weight: 800; fill: #1e293b; font-family: sans-serif;">{{ statsCalculadas.total }}</text>
+                  <text x="100" y="125" text-anchor="middle" style="font-size: 0.72rem; font-weight: 700; fill: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-family: sans-serif;">Tickets</text>
+                </svg>
+                
+                <div class="donut-legend" style="display: flex; flex-direction: column; gap: 0.5rem; min-width: 150px;">
+                  <div class="legend-item" *ngFor="let slice of donutSlices" 
+                       [style.opacity]="hoveredSlice && hoveredSlice !== slice ? '0.4' : '1'"
+                       style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; transition: opacity 0.2s;">
+                    <span class="legend-dot" [style.background-color]="slice.color" style="width: 12px; height: 12px; border-radius: 50%; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></span>
+                    <span class="legend-label" style="color: #334155; font-weight: 700;">{{ slice.label }}:</span>
+                    <strong [style.color]="slice.color" style="margin-left: auto; font-size: 0.9rem; font-weight: 800;">{{ slice.count }} ({{ slice.percentage }}%)</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Card Bar Chart (IREs) -->
+          <div class="glass-card chart-card">
+            <div class="card-header" style="border-bottom: 1px solid rgba(0,0,0,0.06); padding: 1rem 1.25rem;">
+              <h2 style="font-size: 0.95rem; font-weight:700; color: #1e293b;"><i class="bi bi-bar-chart-steps" style="color: #ef4444; margin-right: 8px;"></i> Top Intendencias (IRE)</h2>
+            </div>
+            <div class="card-body bar-chart-body" style="padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; height: 100%; box-sizing: border-box; min-height: 165px;">
+              <div class="bar-chart-custom" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <div class="chart-bar-row" *ngFor="let item of reporteIres | slice:0:4" 
+                     (mouseenter)="hoveredBar = item" (mouseleave)="hoveredBar = null"
+                     style="display: grid; grid-template-columns: 160px 1fr; align-items: center; gap: 0.75rem; cursor: pointer; transition: transform 0.2s;"
+                     [style.transform]="hoveredBar === item ? 'translateX(4px)' : 'none'">
+                  <div class="bar-lbl-text" style="font-size: 0.78rem; color: #334155; font-weight: 700; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="{{ item.nombre_ire }}">{{ getShortIreName(item.nombre_ire) }}</div>
+                  <div class="bar-track-wrap" style="background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.05); height: 16px; border-radius: 6px; overflow: hidden; position: relative;">
+                    <div class="bar-fill-val" 
+                         [style.width.%]="(item.total_tickets / getMaxValue('ires')) * 100" 
+                         [style.background]="hoveredBar === item ? 'linear-gradient(90deg, #ef4444, #f87171)' : 'linear-gradient(90deg, #b02a2a, #ef4444)'"
+                         style="height: 100%; border-radius: 5px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; transition: width 0.8s cubic-bezier(0.1, 0.8, 0.2, 1); box-sizing: border-box;">
+                      <span class="bar-val-badge" style="font-size: 0.68rem; font-weight: 800; color: white;">{{ item.total_tickets }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div *ngIf="reporteIres.length === 0" style="text-align: center; color: #64748b; font-size: 0.8rem; padding: 1.5rem 0;">
+                  No hay datos registrados aún.
+                </div>
+              </div>
+              
+              <!-- Mini info box on hover -->
+              <div class="bar-chart-hover-info" style="margin-top: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 8px; font-size: 0.78rem; color: #475569; display: flex; align-items: center; gap: 6px; min-height: 32px; box-sizing: border-box;">
+                <i class="bi bi-info-circle-fill" style="color: #ef4444;"></i>
+                <span *ngIf="hoveredBar">{{ hoveredBar.nombre_ire }}: <b>{{ hoveredBar.total_tickets }}</b> tickets ({{ hoveredBar.resueltos || 0 }} Resueltos, {{ hoveredBar.pendientes || 0 }} Pendientes)</span>
+                <span *ngIf="!hoveredBar">Pase el cursor sobre las barras para ver detalles.</span>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+
+        <!-- 1. IREs que Más Consultan -->
+        <div class="glass-card">
+          <div class="card-header">
+            <h2><i class="bi bi-geo-alt-fill text-danger"></i> IREs que Más Consultan</h2>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="data-table report-table">
+              <thead>
+                <tr>
+                  <th width="5%">Nro</th>
+                  <th width="45%">INTENDENCIA (IRE)</th>
+                  <th width="12%" style="text-align: center;">TICKETS</th>
+                  <th width="12%" style="text-align: center;">RESUELTOS</th>
+                  <th width="12%" style="text-align: center;">EN PROCESO</th>
+                  <th width="14%" style="text-align: center;">PENDIENTES</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let r of paginatedIres; let i = index">
+                  <td style="font-weight: 700; color: #1e293b;">{{ (pageIres - 1) * itemsPerPage + i + 1 }}</td>
+                  <td>
+                    <div class="report-item-name">{{ r.nombre_ire }}</div>
+                    <div class="progress-bar-container">
+                      <div class="progress-bar-fill bg-danger" [style.width.%]="(r.total_tickets / getMaxValue('ires')) * 100"></div>
+                    </div>
+                  </td>
+                  <td style="text-align: center;"><span class="badge-pill bg-black">{{ r.total_tickets != null ? r.total_tickets : 0 }}</span></td>
+                  <td style="text-align: center;"><span class="badge-pill bg-green">{{ r.resueltos != null ? r.resueltos : 0 }}</span></td>
+                  <td style="text-align: center;"><span class="badge-pill bg-blue">{{ r.en_proceso != null ? r.en_proceso : 0 }}</span></td>
+                  <td style="text-align: center;"><span class="badge-pill bg-orange">{{ r.pendientes != null ? r.pendientes : 0 }}</span></td>
+                </tr>
+                <tr *ngIf="reporteIres.length === 0">
+                  <td colspan="6" class="text-center py-4 text-muted">No hay datos disponibles</td>
+                </tr>
+              </tbody>
+            </table>
+            </div>
+            <!-- Paginación -->
+            <div class="pagination-container" *ngIf="reporteIres.length > itemsPerPage">
+              <button class="btn-page" [disabled]="pageIres === 1" (click)="prevPage('ires')"><i class="bi bi-chevron-left"></i></button>
+              <span class="page-info">Página {{ pageIres }} de {{ totalPages('ires') }}</span>
+              <button class="btn-page" [disabled]="pageIres === totalPages('ires')" (click)="nextPage('ires')"><i class="bi bi-chevron-right"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Incidencias Más Consultadas -->
+        <div class="glass-card mt-4">
+          <div class="card-header">
+            <h2><i class="bi bi-tags-fill text-danger"></i> Incidencias Más Consultadas</h2>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="data-table report-table">
+              <thead>
+                <tr>
+                  <th width="5%">Nro</th>
+                  <th width="45%">INCIDENCIA</th>
+                  <th width="12%" style="text-align: center;">TICKETS</th>
+                  <th width="12%" style="text-align: center;">RESUELTOS</th>
+                  <th width="12%" style="text-align: center;">EN PROCESO</th>
+                  <th width="14%" style="text-align: center;">PENDIENTES</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let r of paginatedTematicas; let i = index">
+                  <td style="font-weight: 700; color: #1e293b;">{{ (pageTematicas - 1) * itemsPerPage + i + 1 }}</td>
+                  <td>
+                    <div class="report-item-name">{{ r.nombre_incidencia }}</div>
+                    <div class="progress-bar-container">
+                      <div class="progress-bar-fill bg-danger" [style.width.%]="(r.total / getMaxValue('tematicas')) * 100"></div>
+                    </div>
+                  </td>
+                  <td style="text-align: center;"><span class="badge-pill bg-black">{{ r.total != null ? r.total : 0 }}</span></td>
+                  <td style="text-align: center;"><span class="badge-pill bg-green">{{ r.resueltos != null ? r.resueltos : 0 }}</span></td>
+                  <td style="text-align: center;"><span class="badge-pill bg-blue">{{ r.en_proceso != null ? r.en_proceso : 0 }}</span></td>
+                  <td style="text-align: center;"><span class="badge-pill bg-orange">{{ r.pendientes != null ? r.pendientes : 0 }}</span></td>
+                </tr>
+                <tr *ngIf="reporteTematicas.length === 0">
+                  <td colspan="6" class="text-center py-4 text-muted">No hay datos disponibles</td>
+                </tr>
+              </tbody>
+            </table>
+            </div>
+            <!-- Paginación -->
+            <div class="pagination-container" *ngIf="reporteTematicas.length > itemsPerPage">
+              <button class="btn-page" [disabled]="pageTematicas === 1" (click)="prevPage('tematicas')"><i class="bi bi-chevron-left"></i></button>
+              <span class="page-info">Página {{ pageTematicas }} de {{ totalPages('tematicas') }}</span>
+              <button class="btn-page" [disabled]="pageTematicas === totalPages('tematicas')" (click)="nextPage('tematicas')"><i class="bi bi-chevron-right"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Incidencias por Intendencia Regional -->
+        <div class="glass-card mt-4 mb-5">
+          <div class="card-header">
+            <h2><i class="bi bi-diagram-3-fill text-danger"></i> Incidencias por Intendencia Regional</h2>
+          </div>
+          <div class="card-body px-0 py-2">
+            
+            <div class="cruce-item" *ngFor="let r of paginatedCruce">
+              <div class="cruce-header">
+                <div class="cruce-title">
+                  <i class="bi bi-building text-danger"></i> {{ r.nombre_ire }}
+                </div>
+                <div class="cruce-badge">
+                  <span class="badge-pill bg-red">{{ r.total_tickets }} tickets</span>
+                </div>
+              </div>
+              <div class="cruce-list">
+                <div class="cruce-row" *ngFor="let inc of r.incidencias; let i = index">
+                  <div class="cruce-index">{{ i + 1 }}.</div>
+                  <div class="cruce-name">{{ inc.nombre_incidencia }}</div>
+                  <div class="cruce-count"><span class="badge-pill bg-black">{{ inc.total }}</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="reporteCruce.length === 0" class="text-center py-4 text-muted">
+              No hay cruces de datos disponibles
+            </div>
+
+            <!-- Paginación -->
+            <div class="pagination-container" *ngIf="reporteCruce.length > itemsPerPage" style="padding: 0 1.75rem 1rem;">
+              <button class="btn-page" [disabled]="pageCruce === 1" (click)="prevPage('cruce')"><i class="bi bi-chevron-left"></i></button>
+              <span class="page-info">Página {{ pageCruce }} de {{ totalPages('cruce') }}</span>
+              <button class="btn-page" [disabled]="pageCruce === totalPages('cruce')" (click)="nextPage('cruce')"><i class="bi bi-chevron-right"></i></button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div><!-- /content-body -->
+  </main>
+
+  <!-- ===== SLIDING DETAIL DRAWER ===== -->
+  <div class="drawer-backdrop" *ngIf="selectedTicketForDetail" (click)="selectedTicketForDetail = null" 
+       style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); z-index: 1050; transition: all 0.3s ease;"></div>
+  
+  <aside class="ticket-drawer" [class.open]="selectedTicketForDetail" 
+         style="position: fixed; top: 0; right: 0; bottom: 0; width: 450px; max-width: 90vw; background: #0d1117; border-left: 1px solid rgba(255,255,255,0.08); box-shadow: -10px 0 30px rgba(0,0,0,0.5); z-index: 1060; transition: transform 0.3s cubic-bezier(0.1, 0.8, 0.2, 1); display: flex; flex-direction: column; transform: translateX(100%);"
+         [style.transform]="selectedTicketForDetail ? 'translateX(0)' : 'translateX(100%)'">
+    
+    <div class="drawer-header" style="padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.01);">
+      <div class="drawer-title-wrap">
+        <span class="drawer-ticket-id notranslate" translate="no" style="font-family: monospace; color: #ef4444; font-size: 0.72rem; font-weight: 700; background: rgba(239, 68, 68, 0.08); padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 4px;">{{ selectedTicketForDetail?.id_ticket }}</span>
+        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: white;">Detalle de Ticket</h3>
+      </div>
+      <button class="btn-close-drawer" (click)="selectedTicketForDetail = null" style="background: none; border: none; color: #64748b; cursor: pointer; font-size: 1.1rem; padding: 4px; transition: color 0.2s;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    
+    <div class="drawer-body" *ngIf="selectedTicketForDetail" style="padding: 1.5rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 1.5rem;">
+      
+      <!-- General Info -->
+      <div class="drawer-section" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <h4 class="drawer-sec-title" style="margin: 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">Información General</h4>
+        <div class="drawer-meta-grid" style="display: grid; grid-template-columns: 1fr; gap: 0.5rem; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 8px;">
+          <div class="meta-item" style="font-size: 0.82rem; line-height: 1.4;"><span class="lbl" style="color: #64748b; font-weight: 500; display: inline-block; width: 100px;">Asunto:</span><strong class="val" style="color: white;">{{ selectedTicketForDetail?.nombreIncidencia || selectedTicketForDetail?.asunto || '—' }}</strong></div>
+          <div class="meta-item" style="font-size: 0.82rem; line-height: 1.4;"><span class="lbl" style="color: #64748b; font-weight: 500; display: inline-block; width: 100px;">Creador:</span><span class="val" style="color: #e2e8f0;">{{ selectedTicketForDetail?.creador?.username || '—' }}</span></div>
+          <div class="meta-item" style="font-size: 0.82rem; line-height: 1.4;"><span class="lbl" style="color: #64748b; font-weight: 500; display: inline-block; width: 100px;">IRE / Sede:</span><span class="val" style="color: #e2e8f0;">{{ selectedTicketForDetail?.cod_ire || '—' }}</span></div>
+          <div class="meta-item" style="font-size: 0.82rem; line-height: 1.4;"><span class="lbl" style="color: #64748b; font-weight: 500; display: inline-block; width: 100px;">Creación:</span><span class="val" style="color: #e2e8f0;">{{ (selectedTicketForDetail?.fecha_creacion || selectedTicketForDetail?.fechaCreacion) | date:'dd/MM/yyyy, h:mm a' }}</span></div>
+          <div class="meta-item" style="font-size: 0.82rem; line-height: 1.4; display: flex; align-items: center;"><span class="lbl" style="color: #64748b; font-weight: 500; display: inline-block; width: 100px;">Estado:</span>
+            <span class="badge {{ selectedTicketForDetail?.estado }}" style="font-size: 0.7rem; padding: 2px 8px; border-radius: 4px;">
+              {{ selectedTicketForDetail?.estado === 'PENDIENTE_CONFIRMACION' ? 'POR CONFIRMAR' : selectedTicketForDetail?.estado }}
+            </span>
+          </div>
+          <div class="meta-item" style="font-size: 0.82rem; line-height: 1.4;" *ngIf="selectedTicketForDetail?.nombreEspecialista !== '—'"><span class="lbl" style="color: #64748b; font-weight: 500; display: inline-block; width: 100px;">Especialista:</span><span class="val" style="color: #e2e8f0;">{{ selectedTicketForDetail?.nombreEspecialista }}</span></div>
+        </div>
+      </div>
+
+      <!-- Attached files -->
+      <div class="drawer-section" *ngIf="getEvidencias(selectedTicketForDetail).length > 0" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <h4 class="drawer-sec-title" style="margin: 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">Archivos de Evidencia</h4>
+        <div class="drawer-evidence-list" style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <a *ngFor="let file of getEvidencias(selectedTicketForDetail); let i = index" 
+             [href]="backendUrl + '/api/tickets/files/' + file + '?token=' + token" target="_blank" 
+             style="display: flex; align-items: center; gap: 8px; background: rgba(56, 189, 248, 0.04); border: 1px solid rgba(56, 189, 248, 0.1); padding: 8px 12px; border-radius: 6px; color: #38bdf8; font-size: 0.8rem; text-decoration: none; font-weight: 600; transition: background 0.2s;">
+            <i class="bi bi-file-earmark-arrow-down" style="font-size: 1rem;"></i> Descargar Evidencia {{ i + 1 }}
+          </a>
+        </div>
+      </div>
+      
+      <!-- Audit Timeline -->
+      <div class="drawer-section" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <h4 class="drawer-sec-title" style="margin: 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">Línea de Tiempo de Auditoría</h4>
+        
+        <div class="timeline-loading" *ngIf="isTimelineLoading" style="color:#94a3b8; font-size:0.8rem; display:flex; align-items:center; gap:8px; padding: 1rem 0;">
+          <span class="spinner-border spinner-border-sm text-danger" role="status" style="width: 14px; height: 14px;"></span> Cargando historial de auditoría...
+        </div>
+        
+        <div class="timeline-empty" *ngIf="!isTimelineLoading && ticketHistorial.length === 0" style="color:#64748b; font-size:0.8rem; font-style:italic; padding: 1rem 0; text-align:center;">
+          No hay eventos registrados en este ticket.
+        </div>
+        
+        <div class="drawer-timeline" *ngIf="!isTimelineLoading && ticketHistorial.length > 0" style="display: flex; flex-direction: column; padding-left: 14px; border-left: 2px solid rgba(255,255,255,0.05); position: relative; margin-left: 6px; gap: 1.25rem;">
+          <div class="timeline-event" *ngFor="let log of ticketHistorial" style="position: relative;">
+            
+            <!-- Bullet marker -->
+            <div class="event-marker" 
+                 [ngStyle]="{'background-color': log.estadoNuevo === 'RESUELTO' ? '#10b981' : log.estadoNuevo === 'PENDIENTE_CONFIRMACION' ? '#fbbf24' : log.estadoNuevo === 'EN_PROCESO' ? '#38bdf8' : log.estadoNuevo === 'RECHAZADO' ? '#ef4444' : '#64748b'}"
+                 style="position: absolute; left: -21px; top: 4px; width: 12px; height: 12px; border-radius: 50%; border: 3px solid #0d1117; box-sizing: border-box;"></div>
+            
+            <div class="event-content" style="display: flex; flex-direction: column; gap: 4px;">
+              <div class="event-header" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: #64748b;">
+                <span class="event-user" style="font-weight: 700; color: #94a3b8;"><i class="bi bi-person-fill" style="margin-right: 3px;"></i> {{ log.usuario }}</span>
+                <span class="event-date" style="font-family: monospace;">{{ log.fecha | date:'dd/MM/yy, h:mm a' }}</span>
+              </div>
+              <p class="event-desc" style="margin: 0; font-size: 0.8rem; color: #e2e8f0; line-height: 1.4;">{{ log.detalles }}</p>
+              
+              <div class="event-states" *ngIf="log.estadoAnterior || log.estadoNuevo" style="display: flex; align-items: center; gap: 6px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin-top: 4px;">
+                <span class="state-prev" *ngIf="log.estadoAnterior" style="color: #64748b; background: rgba(255,255,255,0.03); padding: 1px 6px; border-radius: 3px;">{{ log.estadoAnterior }}</span>
+                <i class="bi bi-arrow-right" *ngIf="log.estadoAnterior && log.estadoNuevo" style="color: #475569; font-size: 0.8rem;"></i>
+                <span class="state-new" 
+                      [ngStyle]="{'color': log.estadoNuevo === 'RESUELTO' ? '#10b981' : log.estadoNuevo === 'PENDIENTE_CONFIRMACION' ? '#fbbf24' : log.estadoNuevo === 'EN_PROCESO' ? '#38bdf8' : log.estadoNuevo === 'RECHAZADO' ? '#ef4444' : '#94a3b8',
+                                  'background': log.estadoNuevo === 'RESUELTO' ? 'rgba(16,185,129,0.08)' : log.estadoNuevo === 'PENDIENTE_CONFIRMACION' ? 'rgba(251,191,36,0.08)' : log.estadoNuevo === 'EN_PROCESO' ? 'rgba(56,189,248,0.08)' : log.estadoNuevo === 'RECHAZADO' ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)'}"
+                      style="padding: 1px 6px; border-radius: 3px;"
+                      *ngIf="log.estadoNuevo">{{ log.estadoNuevo === 'PENDIENTE_CONFIRMACION' ? 'POR CONFIRMAR' : log.estadoNuevo }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </aside>
+  
+  <div class="modal-backdrop" *ngIf="isReassignModalOpen" (click)="cerrarModalReasignacion()" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000;"></div>
+  <div class="modern-modal" *ngIf="isReassignModalOpen" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 500px; background: #161b22; border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 1001; overflow: hidden; display: flex; flex-direction: column;">
+    <div class="modal-header" style="padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin:0; font-size:1.1rem; font-weight:700; color:white;"><i class="bi bi-person-fill-gear" style="color: #38bdf8; margin-right: 8px;"></i> Reasignar Responsable</h3>
+      <button (click)="cerrarModalReasignacion()" style="background:none; border:none; color:#64748b; cursor:pointer; font-size:1.2rem; transition:color 0.2s;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+      <p style="color:#94a3b8; font-size:0.85rem; margin:0; line-height:1.5;">Selecciona el nuevo especialista para liderar la categoría: <strong style="color:white;">"{{ selectedIncidenciaReassign?.nombreIncidencia }}"</strong>.</p>
+      
+      <div style="background: rgba(251, 191, 36, 0.05); border: 1px solid rgba(251, 191, 36, 0.12); padding: 12px; border-radius: 8px; display: flex; gap: 10px;">
+        <i class="bi bi-exclamation-triangle-fill" style="color: #fbbf24; font-size: 1.2rem; margin-top: 1px;"></i>
+        <p style="color: #94a3b8; font-size: 0.78rem; margin: 0; line-height: 1.4;">Al confirmar, los tickets vigentes (Pendientes, En Proceso) de este requerimiento también serán transferidos al nuevo responsable de manera automática.</p>
+      </div>
+      
+      <div class="field-group" style="margin-top:0.5rem;">
+        <label style="color: #64748b; font-size: 0.75rem; font-weight:600; text-transform:uppercase; margin-bottom: 6px; display:block;">Nuevo Especialista</label>
+        <select [(ngModel)]="newEspecialistaId" class="modern-input custom-select" style="background:#0d1117; color:white; border-color:rgba(255,255,255,0.12); width:100%; box-sizing:border-box;">
+          <option [ngValue]="null" disabled selected>-- Seleccione un especialista --</option>
+          <option *ngFor="let esp of especialistasList" [value]="esp.id_usuario || esp.idUsuario">
+            {{ (esp.especialista_num === 1 || esp.especialistaNum === 1) ? '⭐ ' : '' }}{{ esp.username }} &mdash; {{ (esp.especialista_num === 1 || esp.especialistaNum === 1) ? 'Lider Principal' : 'Secundario' }}
+          </option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding: 1rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: flex-end; gap: 10px;">
+      <button class="btn-ghost" (click)="cerrarModalReasignacion()" style="padding:0.6rem 1.25rem; font-size:0.82rem; border-radius:8px; cursor:pointer;">Cancelar</button>
+      <button class="btn-primary" [disabled]="!newEspecialistaId" (click)="ejecutarReasignacionIncidencia()" style="padding:0.6rem 1.25rem; font-size:0.82rem; border-radius:8px; cursor:pointer; background:linear-gradient(135deg, #38bdf8, #0ea5e9); color:#0d1117;">Confirmar Reasignación</button>
+    </div>
+  </div>
+</div>
+

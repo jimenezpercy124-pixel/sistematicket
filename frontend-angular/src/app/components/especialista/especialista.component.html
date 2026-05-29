@@ -1,0 +1,313 @@
+<div class="esp-wrapper">
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="container nav-content">
+      <div class="brand">
+        <img src="assets/img/logo-lupa.png" alt="SIIT" class="logo-img-nav">
+        <span>SIIT SUNAFIL <img src="assets/img/logo-lupa.png" class="lupa-icon-small"></span>
+      </div>
+      <div class="user-info">
+        <div class="user-avatar">{{username.charAt(0).toUpperCase()}}</div>
+        <span class="username">{{ username }}</span>
+        <span *ngIf="especialistaNum === 1" class="badge badge-principal">
+          <i class="bi bi-star-fill"></i> Principal
+        </span>
+        <button (click)="logout()" class="btn-logout" title="Salir"><i class="bi bi-box-arrow-right"></i> Salir</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container content">
+
+    
+    <!-- STATS CARDS -->
+    <div class="stats-grid">
+      <div class="stat-card stat-total">
+        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-label"><i class="bi bi-ticket-detailed"></i> Total</div>
+      </div>
+      <div class="stat-card stat-pendientes">
+        <div class="stat-value">{{ stats.pendientes }}</div>
+        <div class="stat-label"><i class="bi bi-hourglass-split"></i> Pendientes</div>
+      </div>
+      <div class="stat-card stat-en-proceso">
+        <div class="stat-value">{{ stats.enProceso }}</div>
+        <div class="stat-label"><i class="bi bi-gear-fill"></i> En Proceso</div>
+      </div>
+      <div class="stat-card stat-resueltos">
+        <div class="stat-value">{{ stats.resueltos }}</div>
+        <div class="stat-label"><i class="bi bi-check-circle-fill"></i> Resueltos</div>
+      </div>
+    </div>
+
+    <!-- TABLE SECTION -->
+    <div class="card-white table-section mt-4">
+      <div class="header-actions">
+        <h2><i class="bi bi-list-ul text-danger"></i> Mis Tickets</h2>
+        <div class="table-controls">
+          <div class="search-container-especialista">
+            <i class="bi bi-search"></i>
+            <input type="text" [(ngModel)]="searchTerm" placeholder="Buscar por N° Ticket, IRE, Incidencia...">
+          </div>
+          <select [(ngModel)]="filtroEstado" class="filter-select">
+            <option value="TODOS">Todos los estados</option>
+            <option value="PENDIENTE">Pendientes</option>
+            <option value="EN_PROCESO">En Proceso</option>
+            <option value="RESUELTO">Resueltos</option>
+            <option value="RECHAZADO">Rechazados</option>
+          </select>
+          <button (click)="cargarTickets()" class="btn-refresh"><i class="bi bi-arrow-clockwise"></i> Actualizar</button>
+        </div>
+      </div>
+
+      <div *ngIf="isLoading" class="loader-overlay">
+        <div class="spinner"></div>
+      </div>
+
+      <div *ngIf="!isLoading && ticketsFiltrados.length === 0" class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <p>No se encontraron tickets</p>
+      </div>
+
+      <div class="modern-table-container" *ngIf="ticketsFiltrados.length > 0">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th class="notranslate" translate="no">N° TICKET</th>
+              <th>IRE</th>
+              <th>INCIDENCIA</th>
+              <th>USUARIO CREADOR</th>
+              <th>FECHA / HORA</th>
+              <th>ESTADO</th>
+              <th class="text-center">DRIVE / PRUEBA</th>
+              <th>ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of ticketsFiltrados" class="ticket-row" 
+                (click)="verDetalleTicket(t)" 
+                style="cursor:pointer;" 
+                title="Click para ver detalles y auditoría">
+              <td class="id-cell text-danger notranslate" translate="no" data-label="ID TICKET">{{ t.id_ticket }}</td>
+              <td data-label="IRE">{{ t.cod_ire || t.codIre || '—' }}</td>
+              <td class="text-main" data-label="INCIDENCIA">{{ t.nombre_incidencia || t.incidencia?.nombre_incidencia || '—' }}</td>
+              <td data-label="USUARIO CREADOR">{{ t.nombre_inspe || t.creador?.username || '—' }}</td>
+              <td data-label="FECHA">{{ (t.fecha_creacion || t.fechaCreacion) | date:'dd/MM/yy, h:mm a' }}</td>
+              <td data-label="ESTADO">
+                <span class="status-pill" [ngClass]="t.estado">
+                  {{ t.estado === 'PENDIENTE_CONFIRMACION' ? 'POR CONFIRMAR' : t.estado }}
+                </span>
+              </td>
+              <td class="text-center" data-label="PRUEBA" (click)="$event.stopPropagation()">
+                <div *ngIf="t.link_drive || t.linkDrive" style="position: relative; display: inline-block;">
+                  <details class="evidence-dropdown">
+                    <summary class="btn-ver-prueba">
+                      <i class="bi bi-eye-fill"></i> Ver Pruebas ({{ getEvidencias(t).length }})
+                    </summary>
+                    <div class="evidence-menu">
+                      <a *ngFor="let file of getEvidencias(t); let i = index" [href]="backendUrl + '/api/tickets/files/' + file + '?token=' + token" target="_blank" class="evidence-item">
+                        <i class="bi bi-file-earmark-arrow-down"></i> Prueba {{ i + 1 }}
+                      </a>
+                    </div>
+                  </details>
+                </div>
+                <span *ngIf="!t.link_drive && !t.linkDrive" class="text-muted small">no hay prueba</span>
+              </td>
+              <td class="actions-cell" data-label="ACCIONES" (click)="$event.stopPropagation()">
+                <div class="btn-group" *ngIf="t.estado !== 'RESUELTO' && t.estado !== 'RECHAZADO'">
+                  <button (click)="openStatusModal(t)" class="btn-sm btn-edit" title="Editar Estado">
+                    <i class="bi bi-pencil-fill"></i>
+                  </button>
+                  <button *ngIf="especialistaNum === 1" (click)="openDelegateModal(t)" class="btn-sm btn-delegate" title="Delegar Ticket">
+                    <i class="bi bi-arrow-left-right"></i>
+                  </button>
+                </div>
+                <span *ngIf="t.estado === 'RESUELTO'" class="text-muted small">
+                  <i class="bi bi-check-circle-fill text-success"></i> Concluido
+                </span>
+                <span *ngIf="t.estado === 'RECHAZADO'" class="text-muted small">
+                  <i class="bi bi-x-circle-fill text-danger"></i> Rechazado
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL: ACTUALIZAR ESTADO -->
+  <div class="modal-backdrop" *ngIf="showStatusModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="bi bi-pencil-square"></i> Actualizar Estado del Ticket</h3>
+        <button class="btn-close" (click)="closeStatusModal()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-2">Ticket:</p>
+        <h4 class="text-danger mb-4 notranslate" translate="no">TK-{{ selectedTicket?.cod_ire || selectedTicket?.codIre }}-{{ selectedTicketId }}</h4>
+        
+        <label class="form-label">NUEVO ESTADO</label>
+        <select [(ngModel)]="selectedEstado" class="modern-input">
+          <option value="PENDIENTE">⏳ PENDIENTE</option>
+          <option value="EN_PROCESO">⚙️ EN PROCESO</option>
+          <option value="RESUELTO">✅ RESUELTO (solicita confirmación al inspector)</option>
+          <option value="RECHAZADO">❌ RECHAZADO</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" (click)="confirmarStatus()">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: MOTIVO DE RECHAZO -->
+  <div class="modal-backdrop" *ngIf="showRejectionModal">
+    <div class="modal-content" style="max-width: 400px; border-radius: 8px; overflow: hidden;">
+      <div class="modal-header" style="background: #dc3545; color: white;">
+        <h3><i class="bi bi-exclamation-triangle-fill"></i> Motivo de Rechazo</h3>
+        <button class="btn-close" (click)="closeRejectionModal()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-3" style="font-size: 0.9rem;">Por favor, indique la razón por la cual está rechazando atender este ticket:</p>
+        <textarea 
+          [(ngModel)]="motivoRechazo" 
+          class="modern-input" 
+          rows="4" 
+          placeholder="Escriba el motivo detallado aquí..."
+          style="resize: none; border-radius: 6px;"
+        ></textarea>
+      </div>
+      <div class="modal-footer" style="background: #f8fafc;">
+        <button class="btn-secondary" (click)="closeRejectionModal()">Cancelar</button>
+        <button class="btn-primary" style="background: #dc3545;" [disabled]="!motivoRechazo || !motivoRechazo.trim()" (click)="confirmarRechazo()">Confirmar Rechazo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DELEGAR TICKET -->
+  <div class="modal-backdrop" *ngIf="showDelegateModal">
+    <div class="modal-content">
+      <div class="modal-header header-delegate">
+        <h3><i class="bi bi-arrow-left-right"></i> Delegar / Redirigir Ticket</h3>
+        <button class="btn-close" (click)="closeDelegateModal()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-2">Ticket a delegar:</p>
+        <h4 class="text-danger mb-4 notranslate" translate="no">TK-{{ selectedTicket?.cod_ire || selectedTicket?.codIre }}-{{ selectedTicketId }}</h4>
+        
+        <div class="info-alert">
+          <i class="bi bi-info-circle"></i>
+          Como <strong>Especialista Principal</strong>, puede redirigir este ticket a cualquier especialista del equipo.
+        </div>
+
+        <label class="form-label mt-4">REDIRIGIR A</label>
+        <div class="specialist-list">
+          <div *ngFor="let esp of especialistasSecundarios; let i = index" 
+               class="specialist-item" 
+               [class.active]="selectedEspecialistaId === (esp.id_usuario || esp.idUsuario)"
+               (click)="selectedEspecialistaId = (esp.id_usuario || esp.idUsuario)">
+            <span class="esp-number">{{ i + 1 }}</span>
+            <i class="bi bi-star-fill text-warning" *ngIf="esp.especialista_num === 1 || esp.especialistaNum === 1"></i>
+            <span class="esp-name">{{ esp.username }}</span>
+            <span class="badge badge-warning" *ngIf="esp.username === username">(Tú)</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeDelegateModal()">Cancelar</button>
+        <button class="btn-primary" [disabled]="!selectedEspecialistaId" (click)="confirmarDelegacion()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDING DETAIL DRAWER ===== -->
+  <div class="drawer-backdrop" *ngIf="selectedTicketForDetail" (click)="selectedTicketForDetail = null" 
+       style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); z-index: 1050; transition: all 0.3s ease;"></div>
+  
+  <aside class="ticket-drawer" [class.open]="selectedTicketForDetail" 
+         style="position: fixed; top: 0; right: 0; bottom: 0; width: 450px; max-width: 90vw; background: #0d1117; border-left: 1px solid rgba(255,255,255,0.08); box-shadow: -10px 0 30px rgba(0,0,0,0.5); z-index: 1060; transition: transform 0.3s cubic-bezier(0.1, 0.8, 0.2, 1); display: flex; flex-direction: column; transform: translateX(100%);"
+         [style.transform]="selectedTicketForDetail ? 'translateX(0)' : 'translateX(100%)'">
+    
+    <div class="drawer-header" style="padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.01);">
+      <div class="drawer-title-wrap">
+        <span class="drawer-ticket-id notranslate" translate="no" style="font-family: monospace; color: #ef4444; font-size: 0.72rem; font-weight: 700; background: rgba(239, 68, 68, 0.08); padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 4px;">{{ selectedTicketForDetail?.id_ticket }}</span>
+        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: white;">Detalle de Ticket</h3>
+      </div>
+      <button class="btn-close-drawer" (click)="selectedTicketForDetail = null" style="background: none; border: none; color: #64748b; cursor: pointer; font-size: 1.1rem; padding: 4px; transition: color 0.2s;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    
+    <div class="drawer-body" *ngIf="selectedTicketForDetail" style="padding: 1.5rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 1.5rem;">
+      
+      <!-- General Info -->
+      <div class="drawer-section" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <h4 class="drawer-sec-title" style="margin: 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">Información General</h4>
+        <div class="drawer-meta-grid" style="display: grid; grid-template-columns: 1fr; gap: 0.5rem; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 8px;">
+          <div class="meta-item" style="font-size: 0.82rem; line-height: 1.4;"><span class="lbl" style="color: #64748b; font-weight: 500; display: inline-block; width: 100px;">Asunto:</span><strong class="val" style="color: white;">{{ selectedTicketForDetail?.nombre_incidencia || selectedTicketForDetail?.incidencia?.nombre_incidencia || selectedTicketForDetail?.asunto || '—' }}</strong></div>
+          <div class="meta-item" style="font-size: 0.82rem; line-height: 1.4;"><span class="lbl" style="color: #64748b; font-weight: 500; display: inline-block; width: 100px;">Creador:</span><span class="val" style="color: #e2e8f0;">{{ selectedTicketForDetail?.nombre_inspe || selectedTicketForDetail?.creador?.username || '—' }}</span></div>
+          <div class="meta-item" style="font-size: 0.82rem; line-height: 1.4;"><span class="lbl" style="color: #64748b; font-weight: 500; display: inline-block; width: 100px;">IRE / Sede:</span><span class="val" style="color: #e2e8f0;">{{ selectedTicketForDetail?.cod_ire || selectedTicketForDetail?.codIre || '—' }}</span></div>
+          <div class="meta-item" style="font-size: 0.82rem; line-height: 1.4;"><span class="lbl" style="color: #64748b; font-weight: 500; display: inline-block; width: 100px;">Creación:</span><span class="val" style="color: #e2e8f0;">{{ (selectedTicketForDetail?.fecha_creacion || selectedTicketForDetail?.fechaCreacion) | date:'dd/MM/yyyy, h:mm a' }}</span></div>
+          <div class="meta-item" style="font-size: 0.82rem; line-height: 1.4; display: flex; align-items: center;"><span class="lbl" style="color: #64748b; font-weight: 500; display: inline-block; width: 100px;">Estado:</span>
+            <span class="badge {{ selectedTicketForDetail?.estado }}" style="font-size: 0.7rem; padding: 2px 8px; border-radius: 4px;">
+              {{ selectedTicketForDetail?.estado === 'PENDIENTE_CONFIRMACION' ? 'POR CONFIRMAR' : selectedTicketForDetail?.estado }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attached files -->
+      <div class="drawer-section" *ngIf="getEvidencias(selectedTicketForDetail).length > 0" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <h4 class="drawer-sec-title" style="margin: 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">Archivos de Evidencia</h4>
+        <div class="drawer-evidence-list" style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <a *ngFor="let file of getEvidencias(selectedTicketForDetail); let i = index" 
+             [href]="backendUrl + '/api/tickets/files/' + file + '?token=' + token" target="_blank" 
+             style="display: flex; align-items: center; gap: 8px; background: rgba(56, 189, 248, 0.04); border: 1px solid rgba(56, 189, 248, 0.1); padding: 8px 12px; border-radius: 6px; color: #38bdf8; font-size: 0.8rem; text-decoration: none; font-weight: 600; transition: background 0.2s;">
+            <i class="bi bi-file-earmark-arrow-down" style="font-size: 1rem;"></i> Descargar Evidencia {{ i + 1 }}
+          </a>
+        </div>
+      </div>
+      
+      <!-- Audit Timeline -->
+      <div class="drawer-section" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <h4 class="drawer-sec-title" style="margin: 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">Línea de Tiempo de Auditoría</h4>
+        
+        <div class="timeline-loading" *ngIf="isTimelineLoading" style="color:#94a3b8; font-size:0.8rem; display:flex; align-items:center; gap:8px; padding: 1rem 0;">
+          <span class="spinner-border spinner-border-sm text-danger" role="status" style="width: 14px; height: 14px;"></span> Cargando historial de auditoría...
+        </div>
+        
+        <div class="timeline-empty" *ngIf="!isTimelineLoading && ticketHistorial.length === 0" style="color:#64748b; font-size:0.8rem; font-style:italic; padding: 1rem 0; text-align:center;">
+          No hay eventos registrados en este ticket.
+        </div>
+        
+        <div class="drawer-timeline" *ngIf="!isTimelineLoading && ticketHistorial.length > 0" style="display: flex; flex-direction: column; padding-left: 14px; border-left: 2px solid rgba(255,255,255,0.05); position: relative; margin-left: 6px; gap: 1.25rem;">
+          <div class="timeline-event" *ngFor="let log of ticketHistorial" style="position: relative;">
+            
+            <!-- Bullet marker -->
+            <div class="event-marker" 
+                 [ngStyle]="{'background-color': log.estadoNuevo === 'RESUELTO' ? '#10b981' : log.estadoNuevo === 'PENDIENTE_CONFIRMACION' ? '#fbbf24' : log.estadoNuevo === 'EN_PROCESO' ? '#38bdf8' : log.estadoNuevo === 'RECHAZADO' ? '#ef4444' : '#64748b'}"
+                 style="position: absolute; left: -21px; top: 4px; width: 12px; height: 12px; border-radius: 50%; border: 3px solid #0d1117; box-sizing: border-box;"></div>
+            
+            <div class="event-content" style="display: flex; flex-direction: column; gap: 4px;">
+              <div class="event-header" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: #64748b;">
+                <span class="event-user" style="font-weight: 700; color: #94a3b8;"><i class="bi bi-person-fill" style="margin-right: 3px;"></i> {{ log.usuario }}</span>
+                <span class="event-date" style="font-family: monospace;">{{ log.fecha | date:'dd/MM/yy, h:mm a' }}</span>
+              </div>
+              <p class="event-desc" style="margin: 0; font-size: 0.8rem; color: #e2e8f0; line-height: 1.4;">{{ log.detalles }}</p>
+              
+              <div class="event-states" *ngIf="log.estadoAnterior || log.estadoNuevo" style="display: flex; align-items: center; gap: 6px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin-top: 4px;">
+                <span class="state-prev" *ngIf="log.estadoAnterior" style="color: #64748b; background: rgba(255,255,255,0.03); padding: 1px 6px; border-radius: 3px;">{{ log.estadoAnterior }}</span>
+                <i class="bi bi-arrow-right" *ngIf="log.estadoAnterior && log.estadoNuevo" style="color: #475569; font-size: 0.8rem;"></i>
+                <span class="state-new" 
+                      [ngStyle]="{'color': log.estadoNuevo === 'RESUELTO' ? '#10b981' : log.estadoNuevo === 'PENDIENTE_CONFIRMACION' ? '#fbbf24' : log.estadoNuevo === 'EN_PROCESO' ? '#38bdf8' : log.estadoNuevo === 'RECHAZADO' ? '#ef4444' : '#94a3b8',
+                                  'background': log.estadoNuevo === 'RESUELTO' ? 'rgba(16,185,129,0.08)' : log.estadoNuevo === 'PENDIENTE_CONFIRMACION' ? 'rgba(251,191,36,0.08)' : log.estadoNuevo === 'EN_PROCESO' ? 'rgba(56,189,248,0.08)' : log.estadoNuevo === 'RECHAZADO' ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)'}"
+                      style="padding: 1px 6px; border-radius: 3px;"
+                      *ngIf="log.estadoNuevo">{{ log.estadoNuevo === 'PENDIENTE_CONFIRMACION' ? 'POR CONFIRMAR' : log.estadoNuevo }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </aside>
+</div>

@@ -1,0 +1,325 @@
+<div class="dashboard-wrapper">
+  <nav class="navbar">
+    <div class="container navbar-content">
+      <div class="brand">
+        <img src="assets/img/logo-lupa.png" alt="SIIT" class="logo-img-nav">
+        <span class="brand-text">SIIT SUNAFIL <img src="assets/img/logo-lupa.png" class="lupa-icon-small"></span>
+      </div>
+      <div class="user-info">
+        <div class="avatar-gradient">{{ username ? (username | slice:0:1 | uppercase) : 'U' }}</div>
+        <div class="user-details">
+          <span class="user-name">{{ username }}</span>
+          <span class="badge-ire-header">{{ codIre }}</span>
+        </div>
+        <button class="btn-logout-minimal" (click)="logout()">
+          <i class="bi bi-box-arrow-right"></i> <span>Salir</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container main-content">
+
+    <div class="grid-layout">
+      
+      <!-- FORMULARIO -->
+      <section class="card-white form-section">
+        <h2 class="section-title">
+          <i class="bi bi-plus-circle-fill"></i> Nueva Solicitud / Incidencia
+        </h2>
+
+        <form [formGroup]="ticketForm" (ngSubmit)="onSubmit()" class="modern-form">
+          <div class="form-group">
+            <label><i class="bi bi-list-ul"></i> TIPO DE INCIDENCIA / REQUERIMIENTO *</label>
+            <div class="select-wrapper">
+              <select formControlName="id_incidencia" class="modern-input select-field">
+                <option value="">Seleccione una opción</option>
+                <option *ngFor="let inc of incidencias" [value]="inc.id_incidencia">
+                  {{ inc.nombre_incidencia }}
+                </option>
+              </select>
+              <i class="bi bi-chevron-down select-icon"></i>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label><i class="bi bi-chat-left-text"></i> DESCRIPCIÓN / DETALLE ADICIONAL *</label>
+            <textarea 
+              #asuntoInput
+              formControlName="asunto" 
+              class="modern-input" 
+              rows="4" 
+              placeholder="Describa brevemente el inconveniente..."
+              (input)="0"
+            ></textarea>
+            <div class="textarea-footer">
+              <small class="char-count" [class.text-danger]="asuntoLength >= 500">
+                {{ asuntoLength }}/500
+              </small>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label><i class="bi bi-paperclip"></i> ADJUNTAR EVIDENCIA (Opcional)</label>
+            <div class="file-upload-minimal" [class.has-file]="ticketForm.get('evidencia')?.value">
+              <input type="file" #fileInput id="file" (change)="onFileChange($event)" accept=".pdf,.jpg,.png,.docx" style="display: none;">
+              <div class="file-upload-container">
+                <label for="file" class="file-upload-label">
+                  <i class="bi" [ngClass]="ticketForm.get('evidencia')?.value ? 'bi-check-circle-fill text-success' : 'bi-cloud-upload'"></i> 
+                  <span class="file-name-text" [innerText]="selectedFileName"></span>
+                </label>
+                <button type="button" *ngIf="ticketForm.get('evidencia')?.value" class="btn-remove-file" (click)="removeFile($event)" title="Quitar archivo">
+                  <i class="bi bi-x-circle-fill"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label><i class="bi bi-geo-alt"></i> INTENDENCIA REGIONAL (IRE)</label>
+            <input type="text" [value]="codIre" class="modern-input" readonly style="background: #f1f3f4; color: #636e72;">
+          </div>
+
+          <button type="submit" class="btn-primary" [disabled]="ticketForm.invalid || isSubmitting">
+            <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+            {{ isSubmitting ? 'PROCESANDO...' : 'GENERAR TICKET' }}
+          </button>
+        </form>
+      </section>
+
+      <!-- TICKETS RECIENTES -->
+      <aside class="recent-section">
+        <div class="card-white">
+          <h2 class="section-title">
+            <i class="bi bi-clock-history"></i> Mis Tickets Recientes
+          </h2>
+          
+          <div *ngIf="isLoading" style="text-align: center; padding: 2rem;">
+            <div class="spinner-border text-danger"></div>
+          </div>
+
+          <div *ngIf="!isLoading && misTickets.length === 0" style="text-align: center; color: #95a5a6; padding: 2rem;">
+            <p>No tienes tickets registrados</p>
+          </div>
+
+          <div class="ticket-list" *ngIf="!isLoading && misTickets.length > 0">
+            <div *ngFor="let t of paginatedTickets" class="ticket-item" 
+                 (click)="verDetalleTicket(t)" 
+                 style="cursor:pointer;" 
+                 title="Click para ver detalles y auditoría">
+              <div class="ticket-header">
+                <span class="ticket-id notranslate" translate="no">{{ t.id_ticket }}</span>
+                <span class="status-badge" [ngClass]="t.estado">
+                  <i *ngIf="t.estado === 'PENDIENTE'" class="bi bi-hourglass-split"></i>
+                  <i *ngIf="t.estado === 'RESUELTO'" class="bi bi-check-square-fill"></i>
+                  <i *ngIf="t.estado === 'EN_PROCESO'" class="bi bi-gear-fill"></i>
+                  <i *ngIf="t.estado === 'RECHAZADO'" class="bi bi-x-square-fill"></i>
+                  <i *ngIf="t.estado === 'CREADO'" class="bi bi-plus-circle"></i>
+                  <i *ngIf="t.estado === 'PENDIENTE_CONFIRMACION'" class="bi bi-clipboard-check"></i>
+                  {{ getEstadoLabel(t.estado) }}
+                </span>
+              </div>
+              <p class="ticket-cat-name">{{ t.incidencia?.nombre_incidencia }}</p>
+              <div class="ticket-footer">
+                <div class="footer-item">
+                  <i class="bi bi-clock"></i> {{ (t.fecha_creacion || t.fechaCreacion) | date:'dd/MM/yy, h:mm a' }}
+                </div>
+                <div class="footer-item" *ngIf="t.link_drive || t.linkDrive" (click)="$event.stopPropagation()">
+                  <details class="evidence-dropdown">
+                    <summary class="evidence-summary">
+                      <i class="bi bi-paperclip"></i> Ver Pruebas ({{ getEvidencias(t).length }})
+                    </summary>
+                    <div class="evidence-menu">
+                      <a *ngFor="let file of getEvidencias(t); let i = index" [href]="backendUrl + '/api/tickets/files/' + file + '?token=' + token" target="_blank" class="evidence-item">
+                        <i class="bi bi-file-earmark-arrow-down"></i> Prueba {{ i + 1 }}
+                      </a>
+                    </div>
+                  </details>
+                </div>
+                <div class="footer-item" *ngIf="t.especialista_asignado">
+                  <i class="bi bi-person-circle"></i> {{ t.especialista_asignado.username }}
+                </div>
+              </div>
+              
+              <!-- Acciones de confirmación -->
+              <div *ngIf="t.estado === 'PENDIENTE_CONFIRMACION'" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;" (click)="$event.stopPropagation()">
+                <button (click)="confirmarResolucion(t.id_ticket, 'confirmar')" class="btn btn-sm btn-success" style="font-size: 0.75rem;">Confirmar</button>
+                <button (click)="confirmarResolucion(t.id_ticket, 'rechazar')" class="btn btn-sm btn-danger" style="font-size: 0.75rem;">Rechazar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- PAGINACIÓN -->
+          <div class="pagination-container" *ngIf="totalPages > 1">
+            <button class="btn-page" (click)="prevPage()" [disabled]="currentPage === 1">
+              <i class="bi bi-chevron-left"></i>
+            </button>
+            <span style="font-size: 0.8rem; font-weight: 600; color: #636e72;">
+              Página {{ currentPage }} de {{ totalPages }}
+            </span>
+            <button class="btn-page" (click)="nextPage()" [disabled]="currentPage === totalPages">
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- LEYENDA ESTADOS -->
+        <div class="card-white">
+          <h3 class="section-title"><i class="bi bi-info-circle"></i> Estados de Ticket</h3>
+          <div class="status-legend">
+            <span class="legend-badge lg-pendiente">Pendiente</span>
+            <span class="legend-badge lg-proceso">En Proceso</span>
+            <span class="legend-badge lg-resuelto">Resuelto</span>
+            <span class="legend-badge lg-rechazado">Rechazado</span>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+  <!-- MODAL: RECHAZAR RESOLUCIÓN (PERSONALIZADO) -->
+  <div class="modal-backdrop" *ngIf="showRejectModal">
+    <div class="modal-card">
+      <div class="modal-header-red">
+        <div class="header-icon-circle">
+          <i class="bi bi-ticket-perforated-fill"></i>
+        </div>
+        <h3 class="modal-title-main">SIIT-SUNAFIL</h3>
+        <p class="modal-subtitle">Rechazo de Resolución</p>
+      </div>
+
+      <div class="modal-body-custom">
+        <div class="warning-icon-container">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <h2 class="reject-title">Rechazar Resolución</h2>
+        <p class="reject-desc">El ticket volverá al especialista para su revisión.</p>
+
+        <div class="form-group mt-4">
+          <label class="reject-label">¿POR QUÉ RECHAZA LA RESOLUCIÓN?</label>
+          <textarea 
+            [(ngModel)]="rejectMotivo" 
+            class="reject-textarea" 
+            rows="4" 
+            placeholder="Detalle el motivo del por qué no se solucionó correctamente..."
+          ></textarea>
+        </div>
+
+        <div class="form-group mt-3">
+          <label class="reject-label">EVIDENCIA / PRUEBAS (OPCIONAL)</label>
+          <div class="file-upload-reject" [class.has-file]="rejectEvidencia">
+            <input type="file" id="rejectFile" (change)="onRejectFileChange($event)" accept=".pdf,.jpg,.png,.docx" style="display: none;">
+            <div class="reject-file-container">
+              <label for="rejectFile" class="reject-file-label">
+                <i class="bi" [ngClass]="rejectEvidencia ? 'bi-check-circle-fill text-success' : 'bi-cloud-upload'"></i>
+                <span class="file-name-reject" [innerText]="nombreArchivoRechazo"></span>
+              </label>
+              <button type="button" *ngIf="rejectEvidencia" class="btn-remove-reject" (click)="removeRejectFile()">
+                <i class="bi bi-x-circle-fill"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer-custom">
+        <button class="btn-cancel-modal" (click)="closeRejectModal()" [disabled]="isRejecting">CANCELAR</button>
+        <button class="btn-send-reject" (click)="enviarRechazo()" [disabled]="isRejecting">
+          <span *ngIf="isRejecting" class="spinner-border spinner-border-sm me-2"></span>
+          {{ isRejecting ? 'ENVIANDO...' : 'ENVIAR RESPUESTA' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDING DETAIL DRAWER ===== -->
+  <div class="drawer-backdrop" *ngIf="selectedTicketForDetail" (click)="selectedTicketForDetail = null" 
+       style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); z-index: 1050; transition: all 0.3s ease;"></div>
+  
+  <aside class="ticket-drawer" [class.open]="selectedTicketForDetail" 
+         style="position: fixed; top: 0; right: 0; bottom: 0; width: 450px; max-width: 90vw; background: #0d1117; border-left: 1px solid rgba(255,255,255,0.08); box-shadow: -10px 0 30px rgba(0,0,0,0.5); z-index: 1060; transition: transform 0.3s cubic-bezier(0.1, 0.8, 0.2, 1); display: flex; flex-direction: column; transform: translateX(100%);"
+         [style.transform]="selectedTicketForDetail ? 'translateX(0)' : 'translateX(100%)'">
+    
+    <div class="drawer-header" style="padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.01);">
+      <div class="drawer-title-wrap">
+        <span class="drawer-ticket-id notranslate" translate="no" style="font-family: monospace; color: #ef4444; font-size: 0.72rem; font-weight: 700; background: rgba(239, 68, 68, 0.08); padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 4px;">{{ selectedTicketForDetail?.id_ticket }}</span>
+        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: white;">Detalle de Ticket</h3>
+      </div>
+      <button class="btn-close-drawer" (click)="selectedTicketForDetail = null" style="background: none; border: none; color: #64748b; cursor: pointer; font-size: 1.1rem; padding: 4px; transition: color 0.2s;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    
+    <div class="drawer-body" *ngIf="selectedTicketForDetail" style="padding: 1.5rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 1.5rem;">
+      
+      <!-- General Info -->
+      <div class="drawer-section" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <h4 class="drawer-sec-title" style="margin: 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">Información General</h4>
+        <div class="drawer-meta-grid" style="display: grid; grid-template-columns: 1fr; gap: 0.5rem; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 8px;">
+          <div class="meta-item" style="font-size: 0.82rem; line-height: 1.4;"><span class="lbl" style="color: #64748b; font-weight: 500; display: inline-block; width: 100px;">Asunto:</span><strong class="val" style="color: white;">{{ selectedTicketForDetail?.incidencia?.nombre_incidencia || selectedTicketForDetail?.asunto || '—' }}</strong></div>
+          <div class="meta-item" style="font-size: 0.82rem; line-height: 1.4;"><span class="lbl" style="color: #64748b; font-weight: 500; display: inline-block; width: 100px;">Creador:</span><span class="val" style="color: #e2e8f0;">{{ selectedTicketForDetail?.creador?.username || '—' }}</span></div>
+          <div class="meta-item" style="font-size: 0.82rem; line-height: 1.4;"><span class="lbl" style="color: #64748b; font-weight: 500; display: inline-block; width: 100px;">IRE / Sede:</span><span class="val" style="color: #e2e8f0;">{{ selectedTicketForDetail?.cod_ire || selectedTicketForDetail?.codIre || '—' }}</span></div>
+          <div class="meta-item" style="font-size: 0.82rem; line-height: 1.4;"><span class="lbl" style="color: #64748b; font-weight: 500; display: inline-block; width: 100px;">Creación:</span><span class="val" style="color: #e2e8f0;">{{ (selectedTicketForDetail?.fecha_creacion || selectedTicketForDetail?.fechaCreacion) | date:'dd/MM/yyyy, h:mm a' }}</span></div>
+          <div class="meta-item" style="font-size: 0.82rem; line-height: 1.4; display: flex; align-items: center;"><span class="lbl" style="color: #64748b; font-weight: 500; display: inline-block; width: 100px;">Estado:</span>
+            <span class="badge {{ selectedTicketForDetail?.estado }}" style="font-size: 0.7rem; padding: 2px 8px; border-radius: 4px;">
+              {{ selectedTicketForDetail?.estado === 'PENDIENTE_CONFIRMACION' ? 'POR CONFIRMAR' : selectedTicketForDetail?.estado }}
+            </span>
+          </div>
+          <div class="meta-item" style="font-size: 0.82rem; line-height: 1.4;" *ngIf="selectedTicketForDetail?.especialista_asignado"><span class="lbl" style="color: #64748b; font-weight: 500; display: inline-block; width: 100px;">Especialista:</span><span class="val" style="color: #e2e8f0;">{{ selectedTicketForDetail?.especialista_asignado?.username }}</span></div>
+        </div>
+      </div>
+
+      <!-- Attached files -->
+      <div class="drawer-section" style="display: flex; flex-direction: column; gap: 0.75rem;" *ngIf="getEvidencias(selectedTicketForDetail).length > 0">
+        <h4 class="drawer-sec-title" style="margin: 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">Archivos de Evidencia</h4>
+        <div class="drawer-evidence-list" style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <a *ngFor="let file of getEvidencias(selectedTicketForDetail); let i = index" 
+             [href]="backendUrl + '/api/tickets/files/' + file + '?token=' + token" target="_blank" 
+             style="display: flex; align-items: center; gap: 8px; background: rgba(56, 189, 248, 0.04); border: 1px solid rgba(56, 189, 248, 0.1); padding: 8px 12px; border-radius: 6px; color: #38bdf8; font-size: 0.8rem; text-decoration: none; font-weight: 600; transition: background 0.2s;">
+            <i class="bi bi-file-earmark-arrow-down" style="font-size: 1rem;"></i> Descargar Evidencia {{ i + 1 }}
+          </a>
+        </div>
+      </div>
+      
+      <!-- Audit Timeline -->
+      <div class="drawer-section" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <h4 class="drawer-sec-title" style="margin: 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">Línea de Tiempo de Auditoría</h4>
+        
+        <div class="timeline-loading" *ngIf="isTimelineLoading" style="color:#94a3b8; font-size:0.8rem; display:flex; align-items:center; gap:8px; padding: 1rem 0;">
+          <span class="spinner-border spinner-border-sm text-danger" role="status" style="width: 14px; height: 14px;"></span> Cargando historial de auditoría...
+        </div>
+        
+        <div class="timeline-empty" *ngIf="!isTimelineLoading && ticketHistorial.length === 0" style="color:#64748b; font-size:0.8rem; font-style:italic; padding: 1rem 0; text-align:center;">
+          No hay eventos registrados en este ticket.
+        </div>
+        
+        <div class="drawer-timeline" *ngIf="!isTimelineLoading && ticketHistorial.length > 0" style="display: flex; flex-direction: column; padding-left: 14px; border-left: 2px solid rgba(255,255,255,0.05); position: relative; margin-left: 6px; gap: 1.25rem;">
+          <div class="timeline-event" *ngFor="let log of ticketHistorial" style="position: relative;">
+            
+            <!-- Bullet marker -->
+            <div class="event-marker" 
+                 [ngStyle]="{'background-color': log.estadoNuevo === 'RESUELTO' ? '#10b981' : log.estadoNuevo === 'PENDIENTE_CONFIRMACION' ? '#fbbf24' : log.estadoNuevo === 'EN_PROCESO' ? '#38bdf8' : log.estadoNuevo === 'RECHAZADO' ? '#ef4444' : '#64748b'}"
+                 style="position: absolute; left: -21px; top: 4px; width: 12px; height: 12px; border-radius: 50%; border: 3px solid #0d1117; box-sizing: border-box;"></div>
+            
+            <div class="event-content" style="display: flex; flex-direction: column; gap: 4px;">
+              <div class="event-header" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: #64748b;">
+                <span class="event-user" style="font-weight: 700; color: #94a3b8;"><i class="bi bi-person-fill" style="margin-right: 3px;"></i> {{ log.usuario }}</span>
+                <span class="event-date" style="font-family: monospace;">{{ log.fecha | date:'dd/MM/yy, h:mm a' }}</span>
+              </div>
+              <p class="event-desc" style="margin: 0; font-size: 0.8rem; color: #e2e8f0; line-height: 1.4;">{{ log.detalles }}</p>
+              
+              <div class="event-states" *ngIf="log.estadoAnterior || log.estadoNuevo" style="display: flex; align-items: center; gap: 6px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin-top: 4px;">
+                <span class="state-prev" *ngIf="log.estadoAnterior" style="color: #64748b; background: rgba(255,255,255,0.03); padding: 1px 6px; border-radius: 3px;">{{ log.estadoAnterior }}</span>
+                <i class="bi bi-arrow-right" *ngIf="log.estadoAnterior && log.estadoNuevo" style="color: #475569; font-size: 0.8rem;"></i>
+                <span class="state-new" 
+                      [ngStyle]="{'color': log.estadoNuevo === 'RESUELTO' ? '#10b981' : log.estadoNuevo === 'PENDIENTE_CONFIRMACION' ? '#fbbf24' : log.estadoNuevo === 'EN_PROCESO' ? '#38bdf8' : log.estadoNuevo === 'RECHAZADO' ? '#ef4444' : '#94a3b8',
+                                  'background': log.estadoNuevo === 'RESUELTO' ? 'rgba(16,185,129,0.08)' : log.estadoNuevo === 'PENDIENTE_CONFIRMACION' ? 'rgba(251,191,36,0.08)' : log.estadoNuevo === 'EN_PROCESO' ? 'rgba(56,189,248,0.08)' : log.estadoNuevo === 'RECHAZADO' ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)'}"
+                      style="padding: 1px 6px; border-radius: 3px;"
+                      *ngIf="log.estadoNuevo">{{ log.estadoNuevo === 'PENDIENTE_CONFIRMACION' ? 'POR CONFIRMAR' : log.estadoNuevo }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </aside>
+</div>

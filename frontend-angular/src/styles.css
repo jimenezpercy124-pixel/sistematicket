@@ -1,0 +1,61 @@
+/* You can add global styles to this file, and also import other style files */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto; /* Permite scroll vertical global */
+  overflow-x: hidden; /* Evita desplazamientos horizontales no deseados */
+  background-color: #0d1117; /* Fondo oscuro global para evitar destellos blancos */
+}
+
+/* Estilos Globales para Branding */
+.logo-img-sidebar {
+  width: 40px;
+  height: auto;
+  margin-right: 12px;
+}
+
+.logo-img-nav {
+  width: 32px;
+  height: auto;
+  margin-right: 10px;
+}
+
+.lupa-icon-small {
+  width: 18px;
+  height: auto;
+  vertical-align: middle;
+  margin-left: 5px;
+  opacity: 0.9;
+}
+
+.top-role-indicator {
+  background: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: #1e293b;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  margin-bottom: 20px;
+  border-left: 4px solid #d32f2f; /* Rojo Sunafil */
+}
+
+.top-role-indicator i {
+  color: #d32f2f;
+  font-size: 1.1rem;
+}
+
+.top-role-indicator strong {
+  color: #0f172a;
+  margin-left: 4px;
+}
+
