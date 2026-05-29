@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  oracle-db:
+    image: gvenzl/oracle-xe:18-slim
+    container_name: oracle-db
+    ports:
+      - "1521:1521"
+    environment:
+      - ORACLE_PASSWORD=SIIT_PASSWORD
+      - APP_USER=SIIT_USER
+      - APP_USER_PASSWORD=SIIT_PASSWORD
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+
+    healthcheck:
+      test: ["CMD-SHELL", "/bin/bash -c '</dev/tcp/localhost/1521'"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+
+  backend:
+    build: ./backend-spring
+    container_name: backend-siit
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:oracle:thin:@oracle-db:1521/XEPDB1
+      - SPRING_DATASOURCE_USERNAME=SIIT_USER
+      - SPRING_DATASOURCE_PASSWORD=SIIT_PASSWORD
+    depends_on:
+      oracle-db:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads
+
+  frontend:
+    build: ./frontend-angular
+    container_name: frontend-siit
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  oracle_data:
+  uploads:

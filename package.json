@@ -1,0 +1,12 @@
+{
+  "name": "sistema-tickets",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "concurrently \"npm run start:frontend\" \"npm run start:backend\"",
+    "start:frontend": "cd frontend-angular && npm start",
+    "start:backend": "cd backend-spring && mvnw.cmd spring-boot:run"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
